@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>猎物定制器</title><style>:root{ --bg:#15131f; --panel:#1f1b2e; --fg:#e9e6f5; --muted:#9b94b8; --accent:#7F77DD; --accent2:#5a6b7d; --border:rgba(136,136,136,.35); --fs:15px; }
+body.light{ --bg:#f4f3f8; --panel:#ffffff; --fg:#22202c; --muted:#6b6580; --border:rgba(0,0,0,.15); }
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--fg);font-size:var(--fs);padding:10px;}
+.wrap{max-width:520px;margin:0 auto;}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.prog{flex:1;height:8px;background:var(--panel);border-radius:6px;overflow:hidden;}
+.prog>i{display:block;height:100%;width:0;background:var(--accent);transition:.25s;}
+.tbtn{border:1px solid var(--border);background:var(--panel);color:var(--fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.page{display:none;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.page.active{display:block;}
+h3{margin:0 0 4px;font-size:17px;}
+.sub{font-size:12px;color:var(--muted);margin:0 0 12px;}
+label{display:block;font-size:13px;margin:10px 0 4px;}
+input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--fg);font-size:14px;}
+.cust{font-size:12px;color:var(--muted);margin-top:2px;}
+.nav{display:flex;gap:8px;margin-top:16px;}
+.nav button{flex:1;padding:10px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;}
+#prev{background:var(--accent2);}
+#next{background:var(--accent);}
+#start{background:linear-gradient(90deg,#7F77DD,#b06ab3);display:none;}
+.summary{margin-top:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel);}
+.summary>div{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;}
+.summary pre{margin:0;padding:0 14px 12px;white-space:pre-wrap;word-break:break-all;font-size:12px;color:var(--muted);display:none;}
+.summary.open pre{display:block;}
+.random{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px;margin:8px 0;}
+.hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.btn{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;margin-top:10px;}
+.btn.primary{background:linear-gradient(90deg,#7F77DD,#b06ab3);}
+.btn.ghost{background:var(--accent2);}</style></head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="prog"><i id="bar"></i></div>
+    <button class="tbtn" id="themeBtn" title="主题切换">🌙</button>
+    <button class="tbtn" id="fsDown" title="缩小">A-</button>
+    <button class="tbtn" id="fsUp" title="放大">A+</button>
+  </div>
+  <div id="pages"></div>
+  <div class="page" data-step="999" style="display:none;"><div id="confirmText"></div></div>
+  <div class="hint" id="hint"></div>
+  <div class="nav">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+    <button id="start">▶ 开始生成</button>
+  </div>
+  <div class="summary" id="summary">
+    <div id="sumToggle">📋 当前已选汇总（点击展开）<span id="sumCount"></span></div>
+    <pre id="sumBody"></pre>
+  </div>
+</div>
+<script>
+const DIMS=[{"key": "identity", "name": "身份", "pool": ["太傅嫡女", "镇北侯府庶女", "教坊司女冠", "相国府长孙媳", "将军府遗孀", "尚仪局女官", "宗室格格", "商贾之女", "宫中女史", "翰林侍读之妹", "御史千金", "节度使夫人之妹", "国公府侍妾", "盐商总管之女", "书院山长之女", "禁军统领之妹", "县主", "郡君", "命妇随嫁侄女", "边将遗孤"]}, {"key": "age", "name": "年龄", "num": true}, {"key": "personality", "name": "性格", "pool": ["清冷", "娇憨", "腹黑", "温婉", "妩媚", "傲娇", "慵懒", "端庄", "灵动", "倔强", "外柔内刚", "天真烂漫", "冷艳", "疏淡", "泼辣", "狡黠", "忧郁", "痴情", "敏感多思", "强势", "木讷", "胆怯", "缠绵", "孤高"]}, {"key": "figure", "name": "身材", "pool": ["纤秾合度", "高挑修长", "娇小玲珑", "丰腴婀娜", "骨肉匀停", "削肩细腰", "蜜桃翘臀", "酥胸如玉", "长腿玉立", "蜂腰雪肤", "清瘦见骨", "珠圆玉润", "窄肩薄背", "腿根丰盈", "胸臀微丰"]}, {"key": "fetish", "name": "性癖", "pool": ["偏好被温柔以待", "喜欢耳畔低语", "贪恋掌心温度", "享受被缓缓引导", "中意缓慢试探", "喜好被赞美才情", "偏爱烛下私语", "钟情指尖流连", "易被低沉嗓音撩动", "贪恋被注视", "偏好被强势掌控", "喜闻情话呢喃", "暗嗜被轻制手腕", "易为私语脏话所诱", "偏好被从后拥住", "喜闻喘息近耳", "贪恋被抚摸发丝", "偏爱人前隐忍", "暗嗜被窥视感", "喜闻夸其美好"]}, {"key": "sensitive", "name": "敏感点", "pool": ["耳垂", "后颈", "腰窝", "锁骨", "指尖", "手腕内侧", "脚踝", "颈侧", "肋间", "大腿内侧"]}];
+const POOLS={"identity": ["太傅嫡女", "镇北侯府庶女", "教坊司女冠", "相国府长孙媳", "将军府遗孀", "尚仪局女官", "宗室格格", "商贾之女", "宫中女史", "翰林侍读之妹", "御史千金", "节度使夫人之妹", "国公府侍妾", "盐商总管之女", "书院山长之女", "禁军统领之妹", "县主", "郡君", "命妇随嫁侄女", "边将遗孤"], "personality": ["清冷", "娇憨", "腹黑", "温婉", "妩媚", "傲娇", "慵懒", "端庄", "灵动", "倔强", "外柔内刚", "天真烂漫", "冷艳", "疏淡", "泼辣", "狡黠", "忧郁", "痴情", "敏感多思", "强势", "木讷", "胆怯", "缠绵", "孤高"], "figure": ["纤秾合度", "高挑修长", "娇小玲珑", "丰腴婀娜", "骨肉匀停", "削肩细腰", "蜜桃翘臀", "酥胸如玉", "长腿玉立", "蜂腰雪肤", "清瘦见骨", "珠圆玉润", "窄肩薄背", "腿根丰盈", "胸臀微丰"], "fetish": ["偏好被温柔以待", "喜欢耳畔低语", "贪恋掌心温度", "享受被缓缓引导", "中意缓慢试探", "喜好被赞美才情", "偏爱烛下私语", "钟情指尖流连", "易被低沉嗓音撩动", "贪恋被注视", "偏好被强势掌控", "喜闻情话呢喃", "暗嗜被轻制手腕", "易为私语脏话所诱", "偏好被从后拥住", "喜闻喘息近耳", "贪恋被抚摸发丝", "偏爱人前隐忍", "暗嗜被窥视感", "喜闻夸其美好"], "sensitive": ["耳垂", "后颈", "腰窝", "锁骨", "指尖", "手腕内侧", "脚踝", "颈侧", "肋间", "大腿内侧"], "body": ["匀称精壮", "高大魁梧", "清瘦矫健", "修长挺拔"], "ability": ["轻功卓绝，踏雪无痕", "内力深厚，可隔空制穴", "易容妙手，难辨真伪", "用毒如神，见血封喉", "口舌如蜜，最擅撩心", "夜行无声，来去如鬼", "识香辨气，洞悉人心", "掌法凌厉，一击制敌"]};
+const state={};
+const TOTAL=DIMS.length;
+let cur=0;
+(function(){
+  var box=document.getElementById('pages');
+  DIMS.forEach(function(d,i){
+    var pg=document.createElement('div'); pg.className='page'+(i===0?' active':''); pg.setAttribute('data-step',i);
+    var h='<h3>'+String.fromCharCode(65+i)+' '+d.name+'</h3>';
+    if(d.num){
+      h+='<p class="sub">仅限成年女性（18–50）。</p>';
+      h+='<label>年龄</label><input type="number" id="f_'+d.key+'" min="18" max="50" placeholder="18–50">';
+      h+='<div class="cust">或自定义：<input type="text" id="c_'+d.key+'" placeholder="手打年龄"></div>';
+    } else {
+      h+='<p class="sub">'+d.name+'，决定初遇时的态度。</p>';
+      h+='<label>从池中选择</label><select id="f_'+d.key+'"><option value="">— 请选择 —</option>';
+      d.pool.forEach(function(v){ h+='<option value="'+v+'">'+v+'</option>'; });
+      h+='</select>';
+      h+='<div class="cust">或自定义：<input type="text" id="c_'+d.key+'" placeholder="手打'+d.name+'"></div>';
+    }
+    pg.innerHTML=h; box.appendChild(pg);
+  });
+})();
+function show(i){
+  cur=i;
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('.page[data-step="'+i+'"]').classList.add('active');
+  document.getElementById('bar').style.width=(i/(TOTAL-1)*100)+'%';
+  document.getElementById('prev').style.visibility=(i===0?'hidden':'visible');
+  document.getElementById('next').style.display=(i===TOTAL-1?'none':'block');
+  document.getElementById('start').style.display=(i===TOTAL-1?'block':'none');
+  if(i===TOTAL-1) renderConfirm();
+  renderSummary();
+}
+function getDim(d){
+  var c=document.getElementById('c_'+d.key).value.trim();
+  if(c) return c;
+  return document.getElementById('f_'+d.key).value.trim();
+}
+function collect(){ DIMS.forEach(function(d){ state[d.key]=getDim(d); }); }
+function renderConfirm(){ collect(); var t=''; DIMS.forEach(function(d){ t+=d.name+'：'+(state[d.key]||'（未填）')+'\n'; }); document.getElementById('confirmText')&&(document.getElementById('confirmText').textContent=t); }
+function renderSummary(){
+  collect(); var n=0,t='';
+  DIMS.forEach(function(d){ if(state[d.key]){ n++; t+=d.name+'：'+state[d.key]+'\n'; } });
+  document.getElementById('sumCount').textContent='（'+n+'/'+TOTAL+'）';
+  document.getElementById('sumBody').textContent=t||'（尚未填写）';
+}
+function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+function randomAll(){
+  DIMS.forEach(function(d){
+    if(d.num){ document.getElementById('f_'+d.key).value=String(18+Math.floor(Math.random()*33)); document.getElementById('c_'+d.key).value=''; }
+    else { document.getElementById('f_'+d.key).value=rnd(d.pool); document.getElementById('c_'+d.key).value=''; }
+  });
+  document.getElementById('hint').textContent='已随机填充，可手动微调。';
+  renderSummary();
+}
+function validate(){
+  collect();
+  for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(!state[d.key]){ document.getElementById('hint').textContent='「'+d.name+'」尚未填写，请补全。'; show(i); return false; } }
+  var age=state['age']; if(age&&(parseInt(age)<18||parseInt(age)>50||isNaN(parseInt(age)))){ document.getElementById('hint').textContent='年龄必须在 18–50 之间。'; show(1); return false; }
+  return true;
+}
+function start(){
+  if(!validate()) return;
+  collect();
+  var parts=[];
+  DIMS.forEach(function(d){ if(state[d.key]) parts.push(d.name+'='+state[d.key]); });
+  send('【生成目标｜自定义：'+parts.join('｜')+'】');
+  document.getElementById('hint').textContent='已发送，等待 AI 生成猎物…';
+}
+function send(t){
+  if(typeof triggerSlash==='function'){ triggerSlash('/send '+t+' |/trigger'); return; }
+  if(typeof TavernHelper!=='undefined'&&TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ TavernHelper.triggerSlash('/send '+t+' |/trigger'); return; }
+  if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ c.executeSlashCommands('/send '+t+' |/trigger'); return; } }
+  console.log('[选择器] 发送：'+t);
+  alert('未检测到酒馆助手接口(triggerSlash)。请复制下方指令手动发送：\n'+t);
+}
+document.getElementById('prev').onclick=function(){ if(cur>0) show(cur-1); };
+document.getElementById('next').onclick=function(){ if(cur<TOTAL-1) show(cur+1); };
+document.getElementById('start').onclick=start;
+document.getElementById('sumToggle').onclick=function(){ document.getElementById('summary').classList.toggle('open'); };
+show(0);
+</script>
+</body></html>
