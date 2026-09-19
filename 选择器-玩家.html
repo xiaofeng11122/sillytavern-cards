@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>玩家人物</title><style>:root{ --bg:#15131f; --panel:#1f1b2e; --fg:#e9e6f5; --muted:#9b94b8; --accent:#7F77DD; --accent2:#5a6b7d; --border:rgba(136,136,136,.35); --fs:15px; }
+body.light{ --bg:#f4f3f8; --panel:#ffffff; --fg:#22202c; --muted:#6b6580; --border:rgba(0,0,0,.15); }
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--fg);font-size:var(--fs);padding:10px;}
+.wrap{max-width:520px;margin:0 auto;}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.tbtn{border:1px solid var(--border);background:var(--panel);color:var(--fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+h3{margin:0 0 4px;font-size:17px;}
+.sub{font-size:12px;color:var(--muted);margin:0 0 12px;}
+label{display:block;font-size:13px;margin:10px 0 4px;}
+input[type=text],select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--fg);font-size:14px;}
+select option{background:var(--panel);color:var(--fg);}
+.cust{font-size:12px;color:var(--muted);margin-top:2px;}
+.random{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px;margin:8px 0;width:100%;}
+.hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.btn{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;margin-top:10px;}
+.btn.primary{background:linear-gradient(90deg,#7F77DD,#b06ab3);}</style></head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button class="tbtn" id="themeBtn" title="主题切换">🌙</button>
+    <button class="tbtn" id="fsDown" title="缩小">A-</button>
+    <button class="tbtn" id="fsUp" title="放大">A+</button>
+  </div>
+  <div class="card">
+    <h3>① 玩家人物 · 你是何人</h3>
+    <p class="sub">先定下你的来历与形貌，再与能力一并雕琢。此项一经确认即永久锁定。</p>
+    <label>姓名</label>
+    <input type="text" id="name" placeholder="如：沈砚之">
+    <label>身份背景</label>
+    <select id="bg"></select>
+    <input type="text" id="bgC" placeholder="或自定义身份背景" class="cust">
+    <label>外貌</label>
+    <select id="look"></select>
+    <input type="text" id="lookC" placeholder="或自定义外貌" class="cust">
+    <label>性格</label>
+    <select id="cha"></select>
+    <input type="text" id="chaC" placeholder="或自定义性格" class="cust">
+    <button class="random" id="rand">🎲 一键随机生成（自动组合全部属性）</button>
+    <div class="hint" id="hint"></div>
+    <button class="btn primary" id="confirm">确认玩家人物</button>
+  </div>
+</div>
+<script>
+const BG=["落魄书生","江湖游侠","没落贵胄之后","商贾少主","失意武人","寒门幕僚","云游道人","避祸远亲","投奔旧识","落难公子"];
+const LOOK=["清俊文雅","魁梧英武","温润如玉","落拓不羁","剑眉星目","气度沉稳","俊美非常","斯文蕴藉","寡言硬朗","风流倜傥"];
+const CHA=["沉稳内敛","八面玲珑","隐忍缜密","洒脱不羁","温厚长者","心机深沉","玩世不恭","城府极深","外冷内热","圆滑世故"];
+const NAMES=["沈砚之","陆怀瑾","顾长卿","萧景行","谢临川","裴寂","楚惊鸿","卫昭","柳承轩","秦无垢","叶知秋","宋挽","韩烁","唐凛","周慎"];
+function fill(sel,arr){ var s=document.getElementById(sel); s.innerHTML=''; arr.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); }); }
+fill('bg',BG); fill('look',LOOK); fill('cha',CHA);
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+document.getElementById('rand').onclick=function(){
+  document.getElementById('name').value=pick(NAMES);
+  document.getElementById('bg').selectedIndex=Math.floor(Math.random()*BG.length);
+  document.getElementById('look').selectedIndex=Math.floor(Math.random()*LOOK.length);
+  document.getElementById('cha').selectedIndex=Math.floor(Math.random()*CHA.length);
+  document.getElementById('bgC').value=''; document.getElementById('lookC').value=''; document.getElementById('chaC').value='';
+  document.getElementById('hint').textContent='已随机组合，可微调后再确认。';
+};
+document.getElementById('confirm').onclick=function(){
+  var n=document.getElementById('name').value.trim();
+  var bg=document.getElementById('bgC').value.trim()||document.getElementById('bg').value;
+  var lk=document.getElementById('lookC').value.trim()||document.getElementById('look').value;
+  var ch=document.getElementById('chaC').value.trim()||document.getElementById('cha').value;
+  if(!n||!bg||!lk||!ch){ document.getElementById('hint').textContent='姓名、身份背景、外貌、性格都要填写完整。'; return; }
+  send('确认玩家人物｜姓名：'+n+'｜身份背景：'+bg+'｜外貌：'+lk+'｜性格：'+ch);
+  document.getElementById('hint').textContent='已发送，等待 AI 回应…';
+};
+function send(t){
+  if(typeof triggerSlash==='function'){ triggerSlash('/send '+t+' |/trigger'); return; }
+  if(typeof TavernHelper!=='undefined'&&TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ TavernHelper.triggerSlash('/send '+t+' |/trigger'); return; }
+  if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ c.executeSlashCommands('/send '+t+' |/trigger'); return; } }
+  console.log('[选择器] 发送：'+t);
+  alert('未检测到酒馆助手接口(triggerSlash)。请复制下方指令手动发送：\n'+t);
+}
+document.getElementById('themeBtn').onclick=function(){ var b=document.body; b.classList.toggle('light'); this.textContent=b.classList.contains('light')?'☀️':'🌙'; };
+document.getElementById('fsDown').onclick=function(){ var s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')); s=Math.max(12,s-1); document.documentElement.style.setProperty('--fs',s+'px'); };
+document.getElementById('fsUp').onclick=function(){ var s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')); s=Math.min(20,s+1); document.documentElement.style.setProperty('--fs',s+'px'); };
+</script>
+</body></html>
