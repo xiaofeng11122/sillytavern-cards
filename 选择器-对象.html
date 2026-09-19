@@ -14,7 +14,8 @@ body{margin:0;font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;b
 h3{margin:0 0 4px;font-size:17px;}
 .sub{font-size:12px;color:var(--muted);margin:0 0 12px;}
 label{display:block;font-size:13px;margin:10px 0 4px;}
-input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--fg);font-size:14px;}
+input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--fg);font-size:14px;}
+select option{background:var(--panel);color:var(--fg);}
 .cust{font-size:12px;color:var(--muted);margin-top:2px;}
 .nav{display:flex;gap:8px;margin-top:16px;}
 .nav button{flex:1;padding:10px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;}
@@ -25,7 +26,7 @@ input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:
 .summary>div{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;}
 .summary pre{margin:0;padding:0 14px 12px;white-space:pre-wrap;word-break:break-all;font-size:12px;color:var(--muted);display:none;}
 .summary.open pre{display:block;}
-.random{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px;margin:8px 0;}
+.random{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 12px;cursor:pointer;font-size:14px;margin:8px 0;}
 .hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
 .btn{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;margin-top:10px;}
@@ -39,6 +40,7 @@ input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:
     <button class="tbtn" id="fsDown" title="缩小">A-</button>
     <button class="tbtn" id="fsUp" title="放大">A+</button>
   </div>
+  <button class="random" id="rand">🎲 一键随机生成（自动组合全部属性）</button>
   <div id="pages"></div>
   <div class="page" data-step="999" style="display:none;"><div id="confirmText"></div></div>
   <div class="hint" id="hint"></div>
@@ -134,6 +136,7 @@ function send(t){
 document.getElementById('prev').onclick=function(){ if(cur>0) show(cur-1); };
 document.getElementById('next').onclick=function(){ if(cur<TOTAL-1) show(cur+1); };
 document.getElementById('start').onclick=start;
+document.getElementById('rand').onclick=function(){ randomAll(); show(TOTAL-1); window.scrollTo(0,0); };
 document.getElementById('sumToggle').onclick=function(){ document.getElementById('summary').classList.toggle('open'); };
 show(0);
 </script>
