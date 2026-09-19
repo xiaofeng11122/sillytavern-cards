@@ -1,0 +1,97 @@
+<div id="root" class="sg-root">
+<style>
+.sg-root{
+  --sg-panel:#1f1b2e; --sg-fg:#e9e6f5; --sg-muted:#9b94b8; --sg-accent:#7F77DD; --sg-border:rgba(136,136,136,.35);
+  color:var(--sg-fg); font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif; font-size:15px;
+}
+.sg-root.light{ --sg-panel:#ffffff; --sg-fg:#22202c; --sg-muted:#6b6580; --sg-border:rgba(0,0,0,.15); }
+.sg-root *{box-sizing:border-box;}
+.sg-top{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+.sg-tbtn{border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.sg-card{background:var(--sg-panel);border:1px solid var(--sg-border);border-radius:12px;padding:14px;}
+.sg-field{margin:10px 0;}
+.sg-field>label{display:block;font-size:14px;font-weight:600;margin-bottom:4px;}
+.sg-sub{font-size:12px;color:var(--sg-muted);margin:0 0 6px;}
+.sg-root input[type=text],.sg-root input[type=number],.sg-root select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);font-size:14px;}
+.sg-root select option{background:var(--sg-panel);color:var(--sg-fg);}
+.sg-cust{font-size:12px;color:var(--sg-muted);margin-top:4px;}
+.sg-random{display:block;width:100%;background:var(--sg-accent);color:#fff;border:none;border-radius:9px;padding:10px 12px;cursor:pointer;font-size:14px;margin:12px 0 4px;}
+.sg-hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.sg-start{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;background:linear-gradient(90deg,#7F77DD,#b06ab3);}
+</style>
+<div class="sg-top">
+  <button class="sg-tbtn" id="sgTheme" title="主题切换">🌙</button>
+</div>
+<div class="sg-card" id="sgFields"></div>
+<button class="sg-random" id="sgRand">🎲 一键随机生成（自动组合全部属性）</button>
+<div class="sg-hint" id="sgHint"></div>
+<button class="sg-start" id="sgStart">▶ 开始生成</button>
+<script>
+(function(){
+  var DIMS=[
+    {key:'identity',name:'身份',pool:['太傅嫡女','镇北侯府庶女','教坊司女冠','相国府长孙媳','将军府遗孀','尚仪局女官','宗室格格','商贾之女','宫中女史','翰林侍读之妹','御史千金','节度使夫人之妹','国公府侍妾','盐商总管之女','书院山长之女','禁军统领之妹','县主','郡君','命妇随嫁侄女','边将遗孤']},
+    {key:'age',name:'年龄',num:true},
+    {key:'personality',name:'性格',pool:['清冷','娇憨','腹黑','温婉','妩媚','傲娇','慵懒','端庄','灵动','倔强','外柔内刚','天真烂漫','冷艳','疏淡','泼辣','狡黠','忧郁','痴情','敏感多思','强势','木讷','胆怯','缠绵','孤高']},
+    {key:'figure',name:'身材',pool:['纤秾合度','高挑修长','娇小玲珑','丰腴婀娜','骨肉匀停','削肩细腰','蜜桃翘臀','酥胸如玉','长腿玉立','蜂腰雪肤','清瘦见骨','珠圆玉润','窄肩薄背','腿根丰盈','胸臀微丰']},
+    {key:'fetish',name:'性癖',pool:['偏好被温柔以待','喜欢耳畔低语','贪恋掌心温度','享受被缓缓引导','中意缓慢试探','喜好被赞美才情','偏爱烛下私语','钟情指尖流连','易被低沉嗓音撩动','贪恋被注视','偏好被强势掌控','喜闻情话呢喃','暗嗜被轻制手腕','易为私语脏话所诱','偏好被从后拥住','喜闻喘息近耳','贪恋被抚摸发丝','偏爱人前隐忍','暗嗜被窥视感','喜闻夸其美好']},
+    {key:'sensitive',name:'敏感点',pool:['耳垂','后颈','腰窝','锁骨','指尖','手腕内侧','脚踝','颈侧','肋间','大腿内侧']}
+  ];
+  var state={};
+  var box=document.getElementById('sgFields');
+  DIMS.forEach(function(d){
+    var f=document.createElement('div'); f.className='sg-field';
+    var h='<label>'+d.name+'</label>';
+    if(d.num){
+      h+='<p class="sg-sub">仅限成年女性（18–50）。</p>';
+      h+='<input type="number" id="f_'+d.key+'" min="18" max="50" placeholder="18–50">';
+      h+='<div class="sg-cust">或自定义：<input type="text" id="c_'+d.key+'" placeholder="手打年龄"></div>';
+    } else {
+      h+='<p class="sg-sub">'+d.name+'，决定初遇时的关系与态度。</p>';
+      h+='<select id="f_'+d.key+'"><option value="">— 请选择 —</option>';
+      d.pool.forEach(function(v){ h+='<option value="'+v+'">'+v+'</option>'; });
+      h+='</select>';
+      h+='<div class="sg-cust">或自定义：<input type="text" id="c_'+d.key+'" placeholder="手打'+d.name+'"></div>';
+    }
+    f.innerHTML=h; box.appendChild(f);
+  });
+  function getDim(d){ var c=document.getElementById('c_'+d.key).value.trim(); if(c) return c; return document.getElementById('f_'+d.key).value.trim(); }
+  function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+  document.getElementById('sgRand').onclick=function(){
+    DIMS.forEach(function(d){
+      if(d.num){ document.getElementById('f_'+d.key).value=String(18+Math.floor(Math.random()*33)); document.getElementById('c_'+d.key).value=''; }
+      else { document.getElementById('f_'+d.key).value=rnd(d.pool); document.getElementById('c_'+d.key).value=''; }
+    });
+    document.getElementById('sgHint').textContent='已随机填充，可手动微调。';
+  };
+  function build(){
+    DIMS.forEach(function(d){ state[d.key]=getDim(d); });
+    for(var i=0;i<DIMS.length;i++){ if(!state[DIMS[i].key]){ document.getElementById('sgHint').textContent='「'+DIMS[i].name+'」尚未填写，请补全。'; return null; } }
+    var age=state['age']; if(age&&(parseInt(age)<18||parseInt(age)>50||isNaN(parseInt(age)))){ document.getElementById('sgHint').textContent='年龄必须在 18–50 之间。'; return null; }
+    var parts=[]; DIMS.forEach(function(d){ parts.push(d.name+'='+state[d.key]); });
+    return parts.join('｜');
+  }
+  function slash(cmd){
+    return new Promise(function(res,rej){
+      try{
+        if(typeof triggerSlash==='function'){ var p=triggerSlash(cmd); if(p&&p.then){p.then(res,rej);}else{res();} return; }
+        if(window.TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ var p2=TavernHelper.triggerSlash(cmd); if(p2&&p2.then){p2.then(res,rej);}else{res();} return; }
+        if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ var p3=c.executeSlashCommands(cmd); if(p3&&p3.then){p3.then(res,rej);}else{res();} return; } }
+        rej(new Error('未检测到酒馆助手接口'));
+      }catch(e){ rej(e); }
+    });
+  }
+  document.getElementById('sgStart').onclick=function(){
+    var val=build(); if(!val) return;
+    var hint=document.getElementById('sgHint');
+    hint.textContent='生成中…';
+    var t='【生成目标｜自定义：'+val+'】';
+    slash('/send '+t).then(function(){
+      setTimeout(function(){
+        slash('/trigger').then(function(){ hint.textContent='✓ 已重新生成，AI 正在回应…'; }).catch(function(){ hint.textContent='⚠ 触发失败，请手动发送：'+t; });
+      },700);
+    }).catch(function(e){ hint.textContent='⚠ 发送失败：'+e; });
+  };
+  document.getElementById('sgTheme').onclick=function(){ var r=document.getElementById('root'); r.classList.toggle('light'); this.textContent= r.classList.contains('light')?'☀️':'🌙'; };
+})();
+</script>
+</div>
