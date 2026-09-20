@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>主界面</title><style>:root{ --bg:#15131f; --panel:#1f1b2e; --fg:#e9e6f5; --muted:#9b94b8; --accent:#7F77DD; --accent2:#5a6b7d; --border:rgba(136,136,136,.35); --fs:15px; }
+body.light{ --bg:#f4f3f8; --panel:#ffffff; --fg:#22202c; --muted:#6b6580; --border:rgba(0,0,0,.15); }
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--fg);font-size:var(--fs);padding:10px;}
+.wrap{max-width:520px;margin:0 auto;}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.prog{flex:1;height:8px;background:var(--panel);border-radius:6px;overflow:hidden;}
+.prog>i{display:block;height:100%;width:0;background:var(--accent);transition:.25s;}
+.tbtn{border:1px solid var(--border);background:var(--panel);color:var(--fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.page{display:none;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.page.active{display:block;}
+h3{margin:0 0 4px;font-size:17px;}
+.sub{font-size:12px;color:var(--muted);margin:0 0 12px;}
+label{display:block;font-size:13px;margin:10px 0 4px;}
+input[type=text],input[type=number],select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--fg);font-size:14px;}
+.cust{font-size:12px;color:var(--muted);margin-top:2px;}
+.nav{display:flex;gap:8px;margin-top:16px;}
+.nav button{flex:1;padding:10px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;}
+#prev{background:var(--accent2);}
+#next{background:var(--accent);}
+#start{background:linear-gradient(90deg,#7F77DD,#b06ab3);display:none;}
+.summary{margin-top:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel);}
+.summary>div{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;}
+.summary pre{margin:0;padding:0 14px 12px;white-space:pre-wrap;word-break:break-all;font-size:12px;color:var(--muted);display:none;}
+.summary.open pre{display:block;}
+.random{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px;margin:8px 0;}
+.hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.btn{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;margin-top:10px;}
+.btn.primary{background:linear-gradient(90deg,#7F77DD,#b06ab3);}
+.btn.ghost{background:var(--accent2);}</style></head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button class="tbtn" id="themeBtn" title="主题切换">🌙</button>
+    <button class="tbtn" id="fsDown" title="缩小">A-</button>
+    <button class="tbtn" id="fsUp" title="放大">A+</button>
+  </div>
+  <div class="card">
+    <h3>🌺 采花大盗 · 主界面</h3>
+    <p class="sub">根基已定，接下来物色你的下一个猎物。</p>
+    <button class="btn primary" id="genBtn">🎯 生成新目标</button>
+    <button class="btn ghost" id="abBtn">🛠 重新查看能力</button>
+    <div class="hint" id="hint"></div>
+  </div>
+</div>
+<script>
+document.getElementById('genBtn').onclick=function(){ send('【对象选择器】'); document.getElementById('hint').textContent='已发送，正在调出猎物定制器…'; };
+document.getElementById('abBtn').onclick=function(){ send('【能力定制】'); document.getElementById('hint').textContent='已发送，正在调出能力面板…'; };
+function send(t){
+  if(typeof triggerSlash==='function'){ triggerSlash('/send '+t+' |/trigger'); return; }
+  if(typeof TavernHelper!=='undefined'&&TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ TavernHelper.triggerSlash('/send '+t+' |/trigger'); return; }
+  if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ c.executeSlashCommands('/send '+t+' |/trigger'); return; } }
+  console.log('[选择器] 发送：'+t);
+  alert('未检测到酒馆助手接口(triggerSlash)。请复制下方指令手动发送：\n'+t);
+}
+document.getElementById('themeBtn').onclick=function(){ var b=document.body; b.classList.toggle('light'); this.textContent=b.classList.contains('light')?'☀️':'🌙'; };
+document.getElementById('fsDown').onclick=function(){ var s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')); s=Math.max(12,s-1); document.documentElement.style.setProperty('--fs',s+'px'); };
+document.getElementById('fsUp').onclick=function(){ var s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')); s=Math.min(20,s+1); document.documentElement.style.setProperty('--fs',s+'px'); };
+</script>
+</body></html>
