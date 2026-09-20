@@ -1,0 +1,199 @@
+<div id="root" class="sg-root">
+<style>
+.sg-root{
+  --sg-panel:#1f1b2e; --sg-fg:#e9e6f5; --sg-muted:#9b94b8; --sg-accent:#7F77DD; --sg-border:rgba(136,136,136,.35);
+  color:var(--sg-fg); font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif; font-size:15px;
+}
+.sg-root.light{ --sg-panel:#ffffff; --sg-fg:#22202c; --sg-muted:#6b6580; --sg-border:rgba(0,0,0,.15); }
+.sg-root *{box-sizing:border-box;}
+.sg-top{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+.sg-tbtn{border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.sg-card{background:var(--sg-panel);border:1px solid var(--sg-border);border-radius:12px;padding:14px;}
+.sg-field{margin:12px 0;}
+.sg-field>label{display:block;font-size:14px;font-weight:600;margin-bottom:4px;}
+.sg-sub{font-size:12px;color:var(--sg-muted);margin:0 0 6px;}
+.sg-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.sg-row .sg-mini{font-size:12px;color:var(--sg-muted);min-width:32px;flex:none;}
+.sg-row select{flex:1;min-width:0;}
+.sg-root input[type=text],.sg-root input[type=number],.sg-root select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);font-size:14px;}
+.sg-root select option,.sg-root optgroup{background:var(--sg-panel);color:var(--sg-fg);}
+.sg-cust{font-size:12px;color:var(--sg-muted);margin-top:4px;}
+.sg-random{display:block;width:100%;background:var(--sg-accent);color:#fff;border:none;border-radius:9px;padding:10px 12px;cursor:pointer;font-size:14px;margin:12px 0 4px;}
+.sg-hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.sg-start{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;background:linear-gradient(90deg,#7F77DD,#b06ab3);}
+</style>
+<div class="sg-top">
+  <button class="sg-tbtn" id="sgTheme" title="主题切换">🌙</button>
+</div>
+<div class="sg-card" id="sgFields"></div>
+<button class="sg-random" id="sgRand">🎲 一键随机生成（逐维组合全部属性）</button>
+<div class="sg-hint" id="sgHint"></div>
+<button class="sg-start" id="sgStart">▶ 开始生成</button>
+<script>
+(function(){
+var P={"rank": ["世家门阀", "国公府", "侯府", "台阁宰辅", "清流台谏", "浊流权要", "文官六部", "武将勋贵", "巨商富贾", "书香书院"], "houses": {"世家门阀": ["清河崔氏", "琅琊王氏", "陈郡谢氏", "荥阳郑氏", "太原王氏"], "国公府": ["镇国公府", "辅国公府"], "侯府": ["镇北侯府", "靖安侯府"], "台阁宰辅": ["太傅府", "相国府"], "清流台谏": ["御史台清流一脉"], "浊流权要": ["盐铁转运使府"], "文官六部": ["六部文官一脉"], "武将勋贵": ["节度使府", "禁军统领府", "枢密院武将一脉"], "巨商富贾": ["盐商总管府", "漕运巨贾"], "书香书院": ["崇文书院"]}, "position": ["嫡女", "庶女", "养女", "义女", "外室女", "乳姊妹", "表亲", "随嫁侄女", "长孙媳", "次子媳", "守节媳", "遗孀", "侍妾", "通房婢"], "court": ["教坊司女冠", "尚仪局女官", "宫中女史", "内廷尚宫", "宗室格格", "县主", "郡君", "诰命夫人", "道观女冠", "乐坊名伎"], "temper": ["冷", "温", "娇", "烈", "媚", "正", "钝", "野"], "facade": ["外显", "藏锋", "端方", "漫不经心", "易露", "作假"], "build": ["骨肉匀停", "清瘦见骨", "丰腴婀娜", "珠圆玉润"], "stature": ["高挑修长", "中等身量", "娇小玲珑", "肩窄身薄"], "detail": ["蜂腰雪肤", "长腿玉立", "颈长腕细", "腰肢柔韧"], "bosom": ["酥胸如玉", "乳峰圆挺", "丰嫩柔垂", "小巧玲珑"], "hip": ["蜜桃翘臀", "挺翘紧致", "圆润饱满", "窄臀薄肉"], "fetCh": ["触觉", "听觉", "视觉", "言语", "受制"], "fetChW": {"触觉": "掌指抚触", "听觉": "耳畔低语", "视觉": "长久注视", "言语": "软语赞美", "受制": "被轻轻制住"}, "fetInt": ["喜", "贪恋", "偏爱", "暗嗜", "易被"], "fetIntW": {"喜": "偏好", "贪恋": "贪恋", "偏爱": "偏爱", "暗嗜": "暗嗜", "易被": "易被"}, "fetSc": ["私语独处", "被强势掌控", "人前隐忍", "察觉被注视"], "fetScW": {"私语独处": "独处私语时", "被强势掌控": "被强势掌控时", "人前隐忍": "人前隐忍时", "察觉被注视": "察觉被注视时"}, "sensBody": ["耳垂", "后颈", "颈侧", "锁骨", "腰窝", "肋间", "手腕内侧", "指尖", "脚踝", "大腿内侧"], "sensSex": ["乳峰", "乳尖", "小腹", "尾椎", "臀缝", "腿根", "花核", "花径"]};
+
+function opts(arr){var s='';for(var i=0;i<arr.length;i++){s+='<option value="'+arr[i]+'">'+arr[i]+'</option>';}return s;}
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+function el(id){return document.getElementById(id);}
+function val(id){var e=el(id);return e?String(e.value).trim():'';}
+function setv(id,v){var e=el(id);if(e)e.value=v;}
+function emptyAll(){
+  ['c_identity','c_age','c_personality','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});
+}
+function fillHouses(){
+  var r=val('idRank'), s=el('idHouse');
+  if(!s) return;
+  var list=(r&&P.houses[r])?P.houses[r]:[];
+  var h='<option value="">'+(r?'— 请选择 —':'— 请先选门第 —')+'</option>'+opts(list);
+  s.innerHTML=h;
+}
+function onCat(){
+  var cat=val('idCat');
+  var gn=el('grpNoble'), gc=el('grpCourt');
+  if(gn) gn.style.display=(cat==='世家女眷')?'block':'none';
+  if(gc) gc.style.display=(cat==='宫廷爵封')?'block':'none';
+}
+function collect(){
+  var o={};
+  o.identity = val('c_identity') || (function(){
+    var cat=val('idCat');
+    if(cat==='宫廷爵封') return val('idCourt');
+    if(cat==='世家女眷'){ var a=val('idHouse'), b=val('idPos'); return (a&&b)?(a+b):''; }
+    return '';
+  })();
+  o.age = val('c_age') || val('f_age');
+  o.personality = val('c_personality') || (function(){
+    var a=val('f_temper'), b=val('f_facade'); return (a&&b)?(a+'·'+b):'';
+  })();
+  o.figure = val('c_figure') || (function(){
+    var a=[val('f_build'),val('f_stature'),val('f_detail'),val('f_bosom'),val('f_hip')];
+    for(var i=0;i<a.length;i++){ if(!a[i]) return ''; }
+    return a.join('·');
+  })();
+  o.fetish = val('c_fetish') || (function(){
+    var c=val('f_fetch'), i=val('f_fetint'), s=val('f_fetsc');
+    if(!c||!i||!s) return '';
+    return P.fetIntW[i]+P.fetChW[c]+'，'+P.fetScW[s]+'尤甚';
+  })();
+  o.sensitive = val('c_sensitive') || (function(){
+    var a=val('f_sensMain'), b=val('f_sensSub'); return (a&&b)?('主：'+a+'｜次：'+b):'';
+  })();
+  return o;
+}
+var NAMES=['身份','年龄','性格','身材','性癖','敏感点'];
+var KEYS=['identity','age','personality','figure','fetish','sensitive'];
+function toParts(o){
+  var p=[]; for(var i=0;i<KEYS.length;i++){ p.push(NAMES[i]+'='+(o[KEYS[i]]||'')); } return p.join('｜');
+}
+function check(o){
+  for(var i=0;i<KEYS.length;i++){ if(!o[KEYS[i]]) return '「'+NAMES[i]+'」尚未填写，请补全。'; }
+  var age=o.age;
+  if(age&&(parseInt(age)<18||parseInt(age)>50||isNaN(parseInt(age)))) return '年龄必须在 18–50 之间。';
+  return '';
+}
+function randomAll(){
+  emptyAll();
+  if(Math.random()<0.15){
+    setv('idCat','宫廷爵封'); onCat();
+    setv('idCourt', rnd(P.court));
+  } else {
+    setv('idCat','世家女眷'); onCat();
+    var r=rnd(P.rank); setv('idRank', r); fillHouses();
+    setv('idHouse', rnd(P.houses[r]));
+    setv('idPos', rnd(P.position));
+  }
+  setv('f_age', String(18+Math.floor(Math.random()*33)));
+  setv('f_temper', rnd(P.temper)); setv('f_facade', rnd(P.facade));
+  setv('f_build', rnd(P.build)); setv('f_stature', rnd(P.stature));
+  setv('f_detail', rnd(P.detail)); setv('f_bosom', rnd(P.bosom)); setv('f_hip', rnd(P.hip));
+  setv('f_fetch', rnd(P.fetCh)); setv('f_fetint', rnd(P.fetInt)); setv('f_fetsc', rnd(P.fetSc));
+  var all=P.sensBody.concat(P.sensSex);
+  var a=rnd(all), b=rnd(all); while(b===a){ b=rnd(all); }
+  setv('f_sensMain', a); setv('f_sensSub', b);
+}
+
+
+function buildFields(cls, p){
+  var h='';
+  /* 身份 */
+  h+='<div class="'+cls+'"><label>身份</label>';
+  h+='<p class="'+p+'sub">二选一：世家女眷＝门第→家族→闺中位置；或宫廷爵封（本身即完整身份）。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">类别</span><select id="idCat"><option value="">— 请选择 —</option><option value="世家女眷">世家女眷</option><option value="宫廷爵封">宫廷爵封</option></select></div>';
+  h+='<div id="grpNoble" style="display:none">';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">门第</span><select id="idRank"><option value="">— 请选择 —</option>'+opts(P.rank)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">家族</span><select id="idHouse"><option value="">— 请先选门第 —</option></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">位置</span><select id="idPos"><option value="">— 请选择 —</option>'+opts(P.position)+'</select></div>';
+  h+='</div>';
+  h+='<div id="grpCourt" style="display:none">';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">爵职</span><select id="idCourt"><option value="">— 请选择 —</option>'+opts(P.court)+'</select></div>';
+  h+='</div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_identity" placeholder="手打身份"></div></div>';
+  /* 年龄 */
+  h+='<div class="'+cls+'"><label>年龄</label><p class="'+p+'sub">仅限成年女性（18–50）。</p>';
+  h+='<input type="number" id="f_age" min="18" max="50" placeholder="18–50">';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_age" placeholder="手打年龄"></div></div>';
+  /* 性格 */
+  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">底色（本性，定破防后反转）× 表相（示人的姿态）。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">底色</span><select id="f_temper"><option value="">— 请选择 —</option>'+opts(P.temper)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">表相</span><select id="f_facade"><option value="">— 请选择 —</option>'+opts(P.facade)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_personality" placeholder="手打性格"></div></div>';
+  /* 身材 */
+  h+='<div class="'+cls+'"><label>身材</label><p class="'+p+'sub">骨架 × 身量 × 局部 × 乳 × 臀，五维组合。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">骨架</span><select id="f_build"><option value="">— 请选择 —</option>'+opts(P.build)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">身量</span><select id="f_stature"><option value="">— 请选择 —</option>'+opts(P.stature)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">局部</span><select id="f_detail"><option value="">— 请选择 —</option>'+opts(P.detail)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">乳</span><select id="f_bosom"><option value="">— 请选择 —</option>'+opts(P.bosom)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">臀</span><select id="f_hip"><option value="">— 请选择 —</option>'+opts(P.hip)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_figure" placeholder="手打身材"></div></div>';
+  /* 性癖 */
+  h+='<div class="'+cls+'"><label>性癖</label><p class="'+p+'sub">触发通道 × 偏好强度 × 场景，三维组合成句。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">通道</span><select id="f_fetch"><option value="">— 请选择 —</option>'+opts(P.fetCh)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">强度</span><select id="f_fetint"><option value="">— 请选择 —</option>'+opts(P.fetInt)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">场景</span><select id="f_fetsc"><option value="">— 请选择 —</option>'+opts(P.fetSc)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_fetish" placeholder="手打性癖"></div></div>';
+  /* 敏感点 */
+  h+='<div class="'+cls+'"><label>敏感点</label><p class="'+p+'sub">主（最易失守）＋ 次（可作铺垫），两处须不同。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_sensitive" placeholder="手打敏感点"></div></div>';
+  return h;
+}
+function bindFields(){
+  var c=el('idCat'); if(c) c.onchange=onCat;
+  var r=el('idRank'); if(r) r.onchange=fillHouses;
+}
+
+document.getElementById('sgFields').innerHTML=buildFields('sg-field','sg-');
+bindFields();
+document.getElementById('sgRand').onclick=function(){
+  randomAll();
+  document.getElementById('sgHint').textContent='已随机填充，可手动微调。';
+};
+document.getElementById('sgStart').onclick=function(){
+  var o=collect(); var err=check(o);
+  var hint=document.getElementById('sgHint');
+  if(err){ hint.textContent=err; return; }
+  var val=toParts(o);
+  var t='【生成目标｜自定义：'+val+'】';
+  function slash(cmd){
+    return new Promise(function(res,rej){
+      try{
+        if(typeof triggerSlash==='function'){ var p=triggerSlash(cmd); if(p&&p.then){p.then(res,rej);}else{res();} return; }
+        if(window.TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ var p2=TavernHelper.triggerSlash(cmd); if(p2&&p2.then){p2.then(res,rej);}else{res();} return; }
+        if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ var p3=c.executeSlashCommands(cmd); if(p3&&p3.then){p3.then(res,rej);}else{res();} return; } }
+        rej(new Error('未检测到酒馆助手接口'));
+      }catch(e){ rej(e); }
+    });
+  }
+  hint.textContent='生成中…';
+  slash('/send '+t).then(function(){
+    setTimeout(function(){
+      slash('/trigger').then(function(){ hint.textContent='✓ 已重新生成，AI 正在回应…'; }).catch(function(){ hint.textContent='⚠ 触发失败，请手动发送：'+t; });
+    },700);
+  }).catch(function(e){ hint.textContent='⚠ 发送失败：'+e; });
+};
+document.getElementById('sgTheme').onclick=function(){ var r=document.getElementById('root'); r.classList.toggle('light'); this.textContent= r.classList.contains('light')?'☀️':'🌙'; };
+})();
+</script>
+</div>
