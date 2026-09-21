@@ -158,8 +158,10 @@ var P={
   /* 性癖＝主驱动 × 次驱动（八类，各抽 1）；卡面由 AI 写成一句具体的小事，不写标签 */
   fetDrive:['渴慕（情感心理）','予夺（权力角色）','触受（感官身体）','情境（场景氛围）',
             '幻念（幻想主题）','相处（关系动态）','独钟（倾心类型）','隐癖（小众偏好）'],
-  sensBody:['耳垂','后颈','颈侧','锁骨','腰窝','肋间','手腕内侧','指尖','脚踝','大腿内侧'],
-  sensSex:['乳峰','乳尖','小腹','尾椎','臀缝','腿根','花核','花径']
+  /* 敏感点＝三档部位表（表露／私处／深处）；私处须三阶后、深处二处须四阶方可涉及 */
+  sensBody:['口唇','舌','颈部','耳后','头皮','背部','下腹','大腿内侧','臀部'],
+  sensSex:['乳房','乳头','乳晕','阴蒂','阴唇','G 点区域','肛周','肛门'],
+  sensDeep:['宫颈','子宫']
 };
 
 /* 年龄半绑定（uid3 规则） */
@@ -279,15 +281,15 @@ function buildFields(cls,p){
   h+='<div class="'+p+'cust">或直接手打整句：<input type="text" id="c_figure" placeholder="如：身量五尺三四，身姿薄直，肩薄锁骨清浅…"></div></div>';
 
   /* 性癖 */
-  h+='<div class="'+cls+'"><label>性癖 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">这是给 <b>AI 的内部设定</b>，只用来保持描写一致。<b>留空＝隐藏待探</b>：主角要自己在戏里探出来，开局不会知道。</p>';
+  h+='<div class="'+cls+'"><label>性癖 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">这是给 <b>AI 的内部设定</b>，只用来保持描写一致。<b>留空＝隐藏待探</b>：卡片上照常把真值写给你看，但戏里那个采花贼开局不会知道。</p>';
   h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_fetMain"><option value="">— 隐藏待探 —</option>'+opts(P.fetDrive)+'</select></div>';
   h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_fetSub"><option value="">— 不填 —</option>'+opts(P.fetDrive)+'</select></div>';
   h+='<div class="'+p+'cust">或手打（留空即隐藏待探）：<input type="text" id="c_fetish" placeholder="不填最好，留给探索"></div></div>';
 
   /* 敏感点 */
-  h+='<div class="'+cls+'"><label>敏感点 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">同样只是 <b>AI 的内部设定</b>。<b>留空＝隐藏待探</b>——你选定了这个人，不等于采花贼知道她的敏感点。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 隐藏待探 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 不填 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+cls+'"><label>敏感点 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">同样只是 <b>AI 的内部设定</b>。<b>留空＝隐藏待探</b>——卡片上照常把真值写给你看，不等于戏里那个采花贼知道。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 隐藏待探 —</option><optgroup label="表露">'+opts(P.sensBody)+'</optgroup><optgroup label="私处">'+opts(P.sensSex)+'</optgroup><optgroup label="深处">'+opts(P.sensDeep)+'</optgroup></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 不填 —</option><optgroup label="表露">'+opts(P.sensBody)+'</optgroup><optgroup label="私处">'+opts(P.sensSex)+'</optgroup><optgroup label="深处">'+opts(P.sensDeep)+'</optgroup></select></div>';
   h+='<div class="'+p+'cust">或手打（留空即隐藏待探）：<input type="text" id="c_sensitive" placeholder="不填最好，留给探索"></div></div>';
   return h;
 }
@@ -405,11 +407,12 @@ function collect(){
 }
 var NAMES=['身份','年龄','性格','身材','性癖','敏感点'];
 var KEYS=['identity','age','personality','figure','fetish','sensitive'];
-/* 留空项的呈报口径：性格/性癖/敏感点不填，不是「缺失」，而是「交给 AI 内部处理」 */
+/* 留空项的呈报口径：性格/性癖/敏感点不填，不是「缺失」，而是「交给 AI 内部处理」；
+   性癖／敏感点＝AI 内部真值，【目标卡】照常写全真值并附探知标记，只是正文按主角认知分寸推进 */
 var BLANK_WORD={
   personality:'未指定（请你按身份与家世自定「本质」与「外在」各一句描写）',
-  fetish:'未指定（你内部自行设定真值即可；主角探知前不得写入正文或卡片，卡面写「尚未探知」）',
-  sensitive:'未指定（你内部自行设定真值即可；主角探知前不得写入正文或卡片，卡面写「尚未探知」）'
+  fetish:'未指定（你内部自行设定真值即可；【目标卡】照常写全真值并附探知标记，正文按主角认知分寸推进）',
+  sensitive:'未指定（你内部自行设定真值即可，按部位表抽主／次各一处；【目标卡】照常写全真值并附探知标记，正文按主角认知分寸推进）'
 };
 function toParts(o){
   var p=[];
