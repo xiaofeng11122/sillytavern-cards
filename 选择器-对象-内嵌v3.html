@@ -117,8 +117,9 @@ var P={
   },
 
   /* 性格 / 身材 / 性癖 / 敏感点 */
-  temper:['冷','温','娇','烈','媚','正','钝','野'],
-  facade:['外显','藏锋','端方','漫不经心','易露','作假'],
+  /* 性格＝本质＋外在：本质是心里真正要的／怕的，外在是给人看的样子；都只作构思索引，卡上必须写成两句描写 */
+  essTone:['惧被弃','争体面','求认可','要强','贪暖','不甘','自责','怯生','精算','纵性'],
+  facShow:['以礼自缚','以笑遮事','以冷拒人','以柔周旋','以骄压人','以懒避世','以忙自藏','以退守分'],
   build:['骨肉匀停','清瘦见骨','丰腴婀娜','珠圆玉润'],
   stature:['高挑修长','中等身量','娇小玲珑','肩窄身薄'],
   detail:['蜂腰雪肤','长腿玉立','颈长腕细','腰肢柔韧'],
@@ -162,7 +163,7 @@ function val(id){var e=el(id);return e?String(e.value).trim():'';}
 function setv(id,v){var e=el(id);if(e)e.value=v;}
 function allPos(){return P.posSYS['未嫁系'].concat(P.posSYS['妻媳系'],P.posSYS['妾婢系']);}
 function docMarry(){return val('z_marry')||'未嫁';}
-function emptyAll(){['c_identity','c_age','c_personality','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});}
+function emptyAll(){['c_identity','c_age','c_ess','c_fac','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});}
 
 /* ================= 字段构建 ================= */
 function buildFields(cls,p){
@@ -232,10 +233,11 @@ function buildFields(cls,p){
   h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_age" placeholder="手打年龄"></div></div>';
 
   /* 性格 */
-  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">底色（本性，定破防后反转）× 表相（示人的姿态）。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">底色</span><select id="f_temper"><option value="">— 请选择 —</option>'+opts(P.temper)+'</select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">表相</span><select id="f_facade"><option value="">— 请选择 —</option>'+opts(P.facade)+'</select></div>';
-  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_personality" placeholder="手打性格"></div></div>';
+  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">本质（心里真正要的／怕的）＋ 外在（给人看的样子），各一句行为描写。<b>留空则由 AI 按身份家世自定。</b></p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">本质</span><select id="f_ess"><option value="">— 不指定 —</option>'+opts(P.essTone)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">外在</span><select id="f_fac"><option value="">— 不指定 —</option>'+opts(P.facShow)+'</select></div>';
+  h+='<div class="'+p+'cust">或手打本质：<input type="text" id="c_ess" placeholder="如：怕被人丢下，凡事都抢在前头做"></div>';
+  h+='<div class="'+p+'cust">或手打外在：<input type="text" id="c_fac" placeholder="如：人前总是先笑，话说三分就收"></div></div>';
 
   /* 身材 */
   h+='<div class="'+cls+'"><label>身材</label><p class="'+p+'sub">骨架 × 身量 × 局部 × 乳 × 臀，五维组合。</p>';
@@ -247,17 +249,17 @@ function buildFields(cls,p){
   h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_figure" placeholder="手打身材"></div></div>';
 
   /* 性癖 */
-  h+='<div class="'+cls+'"><label>性癖</label><p class="'+p+'sub">触发通道 × 偏好强度 × 场景，三维组合成句。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">通道</span><select id="f_fetch"><option value="">— 请选择 —</option>'+opts(P.fetCh)+'</select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">强度</span><select id="f_fetint"><option value="">— 请选择 —</option>'+opts(P.fetInt)+'</select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">场景</span><select id="f_fetsc"><option value="">— 请选择 —</option>'+opts(P.fetSc)+'</select></div>';
-  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_fetish" placeholder="手打性癖"></div></div>';
+  h+='<div class="'+cls+'"><label>性癖 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">这是给 <b>AI 的内部设定</b>，只用来保持描写一致。<b>留空＝隐藏待探</b>：主角要自己在戏里探出来，开局不会知道。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">通道</span><select id="f_fetch"><option value="">— 隐藏待探 —</option>'+opts(P.fetCh)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">强度</span><select id="f_fetint"><option value="">— 不填 —</option>'+opts(P.fetInt)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">场景</span><select id="f_fetsc"><option value="">— 不填 —</option>'+opts(P.fetSc)+'</select></div>';
+  h+='<div class="'+p+'cust">或手打（留空即隐藏待探）：<input type="text" id="c_fetish" placeholder="不填最好，留给探索"></div></div>';
 
   /* 敏感点 */
-  h+='<div class="'+cls+'"><label>敏感点</label><p class="'+p+'sub">主（最易失守）＋ 次（可作铺垫），两处须不同。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
-  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_sensitive" placeholder="手打敏感点"></div></div>';
+  h+='<div class="'+cls+'"><label>敏感点 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">同样只是 <b>AI 的内部设定</b>。<b>留空＝隐藏待探</b>——你选定了这个人，不等于采花贼知道她的敏感点。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 隐藏待探 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 不填 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'cust">或手打（留空即隐藏待探）：<input type="text" id="c_sensitive" placeholder="不填最好，留给探索"></div></div>';
   return h;
 }
 
@@ -353,7 +355,11 @@ function collect(){
   var o={};
   o.identity = val('c_identity') || identity();
   o.age = val('c_age') || val('f_age');
-  o.personality = val('c_personality') || (function(){var a=val('f_temper'),b=val('f_facade');return (a&&b)?(a+'·'+b):'';})();
+  o.personality = (function(){
+    var a=val('c_ess')||val('f_ess'), b=val('c_fac')||val('f_fac');
+    if(!a&&!b) return '';
+    return '本质：'+(a||'（由你按身份与家世自定一句）')+'；外在：'+(b||'（由你按身份与家世自定一句）');
+  })();
   o.figure = val('c_figure') || (function(){
     var a=[val('f_build'),val('f_stature'),val('f_detail'),val('f_bosom'),val('f_hip')];
     for(var i=0;i<a.length;i++){ if(!a[i]) return ''; }
@@ -371,13 +377,28 @@ function collect(){
 }
 var NAMES=['身份','年龄','性格','身材','性癖','敏感点'];
 var KEYS=['identity','age','personality','figure','fetish','sensitive'];
+/* 留空项的呈报口径：性格/性癖/敏感点不填，不是「缺失」，而是「交给 AI 内部处理」 */
+var BLANK_WORD={
+  personality:'未指定（请你按身份与家世自定「本质」与「外在」各一句描写）',
+  fetish:'未指定（你内部自行设定真值即可；主角探知前不得写入正文或卡片，卡面写「尚未探知」）',
+  sensitive:'未指定（你内部自行设定真值即可；主角探知前不得写入正文或卡片，卡面写「尚未探知」）'
+};
 function toParts(o){
-  var p=[]; for(var i=0;i<KEYS.length;i++){ p.push(NAMES[i]+'='+(o[KEYS[i]]||'')); }
+  var p=[];
+  for(var i=0;i<KEYS.length;i++){
+    var v=o[KEYS[i]]||'';
+    if(!v && BLANK_WORD[KEYS[i]]) v=BLANK_WORD[KEYS[i]];
+    p.push(NAMES[i]+'='+v);
+  }
   var li=liveInfo(); if(li.live) p.push('居所='+li.live.split('（')[0]);
   return p.join('｜');
 }
+/* 硬必填只有三项：身份、年龄、身材——看得见的部分 */
 function check(o){
-  for(var i=0;i<KEYS.length;i++){ if(!o[KEYS[i]]) return '「'+NAMES[i]+'」尚未填写，请补全。'; }
+  var MUST={'身份':1,'年龄':1,'身材':1};
+  for(var i=0;i<KEYS.length;i++){
+    if(!o[KEYS[i]] && MUST[NAMES[i]]) return '「'+NAMES[i]+'」尚未填写，请补全。';
+  }
   var age=o.age;
   if(age&&(parseInt(age)<18||parseInt(age)>50||isNaN(parseInt(age)))) return '年龄必须在 18–50 之间。';
   var c=curCat();
@@ -404,13 +425,13 @@ function randomAll(){
     setv('n_bureau',rnd(P.bureau)); setv('n_duty',rnd(P.duty));
   }
   suggestAge();
-  setv('f_temper',rnd(P.temper)); setv('f_facade',rnd(P.facade));
+  /* 性格：随机给一组构思索引（本质／外在），卡面仍由 AI 展开成两句行为描写 */
+  setv('f_ess',rnd(P.essTone)); setv('f_fac',rnd(P.facShow));
   setv('f_build',rnd(P.build)); setv('f_stature',rnd(P.stature));
   setv('f_detail',rnd(P.detail)); setv('f_bosom',rnd(P.bosom)); setv('f_hip',rnd(P.hip));
-  setv('f_fetch',rnd(P.fetCh)); setv('f_fetint',rnd(P.fetInt)); setv('f_fetsc',rnd(P.fetSc));
-  var all=P.sensBody.concat(P.sensSex);
-  var a=rnd(all),b=rnd(all); while(b===a){ b=rnd(all); }
-  setv('f_sensMain',a); setv('f_sensSub',b);
+  /* 性癖／敏感点：一律留空＝隐藏待探（真值由 AI 内部设定，玩家自己探） */
+  setv('f_fetch',''); setv('f_fetint',''); setv('f_fetsc','');
+  setv('f_sensMain',''); setv('f_sensSub','');
   showLive();
 }
 function bindFields(){
@@ -428,7 +449,7 @@ document.getElementById('sgFields').innerHTML=buildFields('sg-field','sg-');
 bindFields();
 document.getElementById('sgRand').onclick=function(){
   randomAll();
-  document.getElementById('sgHint').textContent='已随机填充，可手动微调。';
+  document.getElementById('sgHint').textContent='已随机填充（性癖／敏感点默认留空＝隐藏待探，去戏里自己发掘）。';
 };
 document.getElementById('sgStart').onclick=function(){
   var o=collect(); var err=check(o);
