@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>猎物定制器 v5 · 五类身份</title>
+<style>
+html,body{margin:0;padding:0;}
+.sg-page{background:#15131f;min-height:100vh;padding:12px;}
+.sg-wrap{max-width:560px;margin:0 auto;}
+.sg-note{font-size:12px;line-height:1.75;color:#9b94b8;margin:0 0 10px;padding:9px 12px;
+  border:1px solid rgba(136,136,136,.35);border-radius:10px;background:#1f1b2e;}
+.sg-note b{color:#b9b1ff;}
+.sg-note .k{color:#e9e6f5;}
+body.light .sg-page{background:#f4f3f8;}
+body.light .sg-note{background:#fff;color:#6b6580;border-color:rgba(0,0,0,.15);}
+body.light .sg-note b{color:#5b52c9;}
+body.light .sg-note .k{color:#22202c;}
+</style></head>
+<body>
+<div class="sg-page"><div class="sg-wrap">
+<div class="sg-note"><b>五类身份</b>：宗室皇亲 / 朝官家眷 / 外官家眷 / 世家女眷 / 宫廷女官。
+选定后 <b>「居所」会实时显示</b>——公主住内廷或公主府、女官终身居宫中、盐商居商宅，<span class="k">身份与居所严格对应</span>。</div>
+<div id="root" class="sg-root">
+<style>
+.sg-root{
+  --sg-panel:#1f1b2e; --sg-fg:#e9e6f5; --sg-muted:#9b94b8; --sg-accent:#7F77DD; --sg-border:rgba(136,136,136,.35);
+  color:var(--sg-fg); font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif; font-size:15px;
+}
+.sg-root.light{ --sg-panel:#ffffff; --sg-fg:#22202c; --sg-muted:#6b6580; --sg-border:rgba(0,0,0,.15); }
+.sg-root *{box-sizing:border-box;}
+.sg-top{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+.sg-tbtn{border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;}
+.sg-card{background:var(--sg-panel);border:1px solid var(--sg-border);border-radius:12px;padding:14px;}
+.sg-field{margin:12px 0;}
+.sg-field>label{display:block;font-size:14px;font-weight:600;margin-bottom:4px;}
+.sg-sub{font-size:12px;color:var(--sg-muted);margin:0 0 6px;}
+.sg-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.sg-row .sg-mini{font-size:12px;color:var(--sg-muted);min-width:44px;flex:none;}
+.sg-row select{flex:1;min-width:0;}
+.sg-root input[type=text],.sg-root input[type=number],.sg-root select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--sg-border);background:var(--sg-panel);color:var(--sg-fg);font-size:14px;}
+.sg-root select option,.sg-root optgroup{background:var(--sg-panel);color:var(--sg-fg);}
+.sg-cust{font-size:12px;color:var(--sg-muted);margin-top:4px;}
+.sg-live{font-size:12.5px;line-height:1.55;margin:8px 0 2px;padding:8px 10px;border-radius:8px;
+  border:1px dashed rgba(127,119,221,.55);background:rgba(127,119,221,.10);color:var(--sg-fg);}
+.sg-live b{color:#b9b1ff;}
+.sg-root.light .sg-live b{color:#5b52c9;}
+.sg-live .warn{color:#e07b7b;font-weight:600;}
+.sg-live .ok{color:#6ec98a;font-weight:600;}
+.sg-random{display:block;width:100%;background:var(--sg-accent);color:#fff;border:none;border-radius:9px;padding:10px 12px;cursor:pointer;font-size:14px;margin:12px 0 4px;}
+.sg-hint{font-size:12px;color:#e07b7b;min-height:16px;margin-top:6px;}
+.sg-start{width:100%;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:14px;color:#fff;background:linear-gradient(90deg,#7F77DD,#b06ab3);}
+</style>
+<div class="sg-top">
+  <button class="sg-tbtn" id="sgTheme" title="主题切换">🌙</button>
+</div>
+<div class="sg-card" id="sgFields"></div>
+<button class="sg-random" id="sgRand">🎲 一键随机生成（逐维组合全部属性）</button>
+<div class="sg-hint" id="sgHint"></div>
+<button class="sg-start" id="sgStart">▶ 开始生成</button>
+<script>
+(function(){
+/* ================= 身份池 v3：五类 × 身份→居所硬映射 ================= */
+var P={
+  cat:['宗室皇亲','朝官家眷','外官家眷','世家女眷','宫廷女官'],
+
+  /* 一、宗室皇亲 */
+  zRel:['宗室女','宗室妇'],
+  zRank:['公主','郡主','县主','郡君','乡君'],
+  zMarry:['未嫁','已嫁'],
+  zLive:{
+    '公主|未嫁':'皇宫内廷·殿阁偏院（由内廷局司照管）','公主|已嫁':'公主府（京城赐第，家令司掌府务）',
+    '郡主|未嫁':'亲王府·内院东所','郡主|已嫁':'郡主府 或 夫家（郡马府）',
+    '县主|未嫁':'郡王府·内院','县主|已嫁':'县主宅 或 夫家',
+    '郡君|未嫁':'贝勒府·内院西所','郡君|已嫁':'夫家（郡马府）',
+    '乡君|未嫁':'贝子府·内院','乡君|已嫁':'夫家'
+  },
+  zWife:['亲王妃','郡王妃','世子妃','侧妃','贝勒夫人'],
+  zWifeLive:{'亲王妃':'亲王府·正院','郡王妃':'郡王府·正院','世子妃':'亲王府·东院（世子院）','侧妃':'亲王府·西院','贝勒夫人':'贝勒府·正院'},
+  zZone:{'公主|未嫁':'A1 宫城','公主|已嫁':'A3 公主府','郡主|未嫁':'A2 亲王府','郡主|已嫁':'A4 郡马府／A2','县主|未嫁':'A2 郡王府','县主|已嫁':'A4 县主宅',
+         '郡君|未嫁':'A2 贝勒府','郡君|已嫁':'A2 夫家','乡君|未嫁':'A2 贝子府','乡君|已嫁':'A2 夫家'},
+
+  /* 二、朝官家眷 */
+  guanRank:['正一品','从一品','正二品','从二品','正三品','从三品','正四品','从四品'],
+  guanOffice:{
+    '正一品':['太师','太傅','太保','大学士'],'从一品':['少师','少傅','六部尚书','协办大学士'],
+    '正二品':['尚书','左都御史','京职总督','内大臣'],'从二品':['侍郎','内阁学士','京职布政使','散秩大臣'],
+    '正三品':['侍郎','大理寺卿','通政使','京职按察使'],'从三品':['光禄寺卿','太仆寺卿','盐运使','鸿胪寺卿'],
+    '正四品':['少卿','京职知府','鸿胪寺少卿','太常寺少卿'],'从四品':['国子监祭酒','京职知州','员外郎','翰林侍读']
+  },
+  guanHome:{
+    '正一品':'敕造一品府邸（五进，御赐匾额，A5）','从一品':'一品府邸（五进，A5）',
+    '正二品':'二品府第（五进偏西，A5）','从二品':'二品府第（四进，A5）',
+    '正三品':'三品府第（三进，A6）','从三品':'三品宅院（三进，A6）',
+    '正四品':'四品宅院（二进，A6）','从四品':'四品宅院（二进偏院，A6）'
+  },
+
+  /* 三、外官家眷 */
+  waiOffice:['总督','巡抚','布政使','按察使','知府','知县','县丞','主簿'],
+  waiPlace:['两江','直隶','江苏','浙江','江宁','苏州','扬州','杭州'],
+  waiLive:{
+    '总督':'督抚衙门后宅（衙门·二堂·后宅·内院·东西厢，A7）','巡抚':'抚衙后宅（A7）',
+    '布政使':'藩司署后宅（A7）','按察使':'臬司署后宅（A7）',
+    '知府':'府衙后宅（二进，A7）','知县':'县衙后宅（一进小院，A7）',
+    '县丞':'县衙偏院（A7）','主簿':'县衙偏院（A7）'
+  },
+
+  /* 四、世家女眷 */
+  rank:['世家门阀','国公府','侯府','台阁宰辅','清流台谏','浊流权要','文官六部','武将勋贵','巨商富贾','书香清贵','外官督抚','地方府县'],
+  houses:{
+    '世家门阀':['清河崔氏','琅琊王氏','陈郡谢氏','荥阳郑氏','太原王氏'],
+    '国公府':['镇国公府','辅国公府','信国公府','荣国公府'],
+    '侯府':['镇北侯府','靖安侯府','定远侯府','宁远侯府'],
+    '台阁宰辅':['太傅裴府','相国崔府','首辅苏府','次辅程府'],
+    '清流台谏':['御史中丞裴府','左都御史林府','翰林学士苏府','国子监祭酒程府'],
+    '浊流权要':['盐铁转运使卢府','度支使贾府','漕运总督韩府','市舶提举钱府'],
+    '文官六部':['礼部尚书周府','吏部侍郎吴府','户部郎中郑府','工部主事何府'],
+    '武将勋贵':['节度使秦府','禁军统领卫府','骠骑将军霍府','都指挥使岳府'],
+    '巨商富贾':['扬州盐商江府','淮南漕运沈府','苏杭绸缎褚府','西北茶马骆府'],
+    '书香清贵':['白鹿书院程府','汲古阁毛氏','崇文阁裴府','岳麓书院山长府'],
+    '外官督抚':['两江总督韩府','直隶总督白府','江苏巡抚邵府','江宁织造曹府'],
+    '地方府县':['扬州知府陆府','苏州知府严府','江宁知县石府','杭州同知贺府']
+  },
+  nobleZone:{
+    '世家门阀':'A5 官宅五进','国公府':'A5 官宅五进','侯府':'A5 官宅五进','台阁宰辅':'A5 官宅五进',
+    '清流台谏':'A6 官宅三进','文官六部':'A6 官宅三进',
+    '浊流权要':'A7 衙门后宅／A6','外官督抚':'A7 衙门后宅','地方府县':'A7 衙门后宅',
+    '武将勋贵':'A9 将门','巨商富贾':'A8 商宅','书香清贵':'A10 清贵宅第'
+  },
+
+  /* 五、宫廷女官 */
+  bureau:['尚宫局','尚仪局','尚服局','尚食局','尚寝局','尚功局','掖庭'],
+  duty:['内廷尚宫','尚仪局女官','宫中女史','司正','掌籍','掖庭令'],
+
+  /* 位分 三系 */
+  posSYS:{
+    '未嫁系':['嫡女','庶女','养女','义女','外室女','独女','老姑娘','寄居女'],
+    '妻媳系':['长孙媳','次子媳','嫡媳','守节媳','遗孀','续弦','掌家娘子'],
+    '妾婢系':['侍妾','通房','陪房']
+  },
+
+  /* 性格 / 身材 / 性癖 / 敏感点 */
+  temper:['冷','温','娇','烈','媚','正','钝','野'],
+  facade:['外显','藏锋','端方','漫不经心','易露','作假'],
+  build:['骨肉匀停','清瘦见骨','丰腴婀娜','珠圆玉润'],
+  stature:['高挑修长','中等身量','娇小玲珑','肩窄身薄'],
+  detail:['蜂腰雪肤','长腿玉立','颈长腕细','腰肢柔韧'],
+  bosom:['酥胸如玉','乳峰圆挺','丰嫩柔垂','小巧玲珑'],
+  hip:['蜜桃翘臀','挺翘紧致','圆润饱满','窄臀薄肉'],
+  fetCh:['触觉','听觉','视觉','言语','受制'],
+  fetChW:{'触觉':'掌指抚触','听觉':'耳畔低语','视觉':'长久注视','言语':'软语赞美','受制':'被轻轻制住'},
+  fetInt:['喜','贪恋','偏爱','暗嗜','易被'],
+  fetIntW:{'喜':'偏好','贪恋':'贪恋','偏爱':'偏爱','暗嗜':'暗嗜','易被':'易被'},
+  fetSc:['私语独处','被强势掌控','人前隐忍','察觉被注视'],
+  fetScW:{'私语独处':'独处私语时','被强势掌控':'被强势掌控时','人前隐忍':'人前隐忍时','察觉被注视':'察觉被注视时'},
+  sensBody:['耳垂','后颈','颈侧','锁骨','腰窝','肋间','手腕内侧','指尖','脚踝','大腿内侧'],
+  sensSex:['乳峰','乳尖','小腹','尾椎','臀缝','腿根','花核','花径']
+};
+
+/* 年龄半绑定（uid3 规则） */
+var AGE={
+  '嫡女':[18,26],'庶女':[18,26],'养女':[18,26],'义女':[18,26],'外室女':[18,26],'独女':[18,26],
+  '寄居女':[18,28],'老姑娘':[26,34],
+  '长孙媳':[20,32],'次子媳':[20,32],'嫡媳':[20,32],'守节媳':[22,48],'遗孀':[24,50],'续弦':[26,44],'掌家娘子':[28,48],
+  '侍妾':[18,36],'通房':[18,36],'陪房':[18,36]
+};
+/* 主母位（按身份判定） */
+function motherOf(cat,pos,rel,rank){
+  if(cat==='宫廷女官') return '掌事姑姑（本局尚宫／司正）';
+  if(cat==='宗室皇亲'){
+    if(rel==='宗室妇') return '太妃（夫之母）或先王妃';
+    return rank==='公主'&&docMarry()==='已嫁' ? '婆母（居公主府则由家令司掌事代行内宅之事）' : '母妃（亲王正妃／皇后）或其嫡母';
+  }
+  if(!pos) return '—';
+  if(P.posSYS['妻媳系'].indexOf(pos)>=0) return '婆母（现任家主正妻）';
+  if(P.posSYS['妾婢系'].indexOf(pos)>=0) return '主母（夫之正妻）';
+  return '嫡母（生母或父之正妻），另附生母（若为庶出）';
+}
+
+/* ================= 工具 ================= */
+function opts(a){var s='';for(var i=0;i<a.length;i++){s+='<option value="'+a[i]+'">'+a[i]+'</option>';}return s;}
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+function el(id){return document.getElementById(id);}
+function val(id){var e=el(id);return e?String(e.value).trim():'';}
+function setv(id,v){var e=el(id);if(e)e.value=v;}
+function allPos(){return P.posSYS['未嫁系'].concat(P.posSYS['妻媳系'],P.posSYS['妾婢系']);}
+function docMarry(){return val('z_marry')||'未嫁';}
+function emptyAll(){['c_identity','c_age','c_personality','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});}
+
+/* ================= 字段构建 ================= */
+function buildFields(cls,p){
+  var h='';
+  /* 类别 */
+  h+='<div class="'+cls+'"><label>身份类别</label>';
+  h+='<p class="'+p+'sub">五类身份各有对应居所，选定后下方会实时显示「她住在哪」。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">类别</span><select id="idCat"><option value="">— 请选择 —</option>'+opts(P.cat)+'</select></div></div>';
+
+  /* 一、宗室皇亲 */
+  h+='<div id="grpZong" style="display:none">';
+  h+='<div class="'+cls+'"><label>宗室皇亲</label>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">称谓</span><select id="z_rel"><option value="">— 请选择 —</option>'+opts(P.zRel)+'</select></div>';
+  h+='<div id="zNv" style="display:none">';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">爵级</span><select id="z_rank"><option value="">— 请选择 —</option>'+opts(P.zRank)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">婚否</span><select id="z_marry"><option value="">— 请选择 —</option>'+opts(P.zMarry)+'</select></div>';
+  h+='</div>';
+  h+='<div id="zFu" style="display:none">';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">封号</span><select id="z_wife"><option value="">— 请选择 —</option>'+opts(P.zWife)+'</select></div>';
+  h+='</div></div></div>';
+
+  /* 二、朝官家眷 */
+  h+='<div id="grpGuan" style="display:none">';
+  h+='<div class="'+cls+'"><label>朝官家眷</label>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">品级</span><select id="g_rank"><option value="">— 请选择 —</option>'+opts(P.guanRank)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">官职</span><select id="g_office"><option value="">— 请先选品级 —</option></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">位分</span><select id="g_pos"><option value="">— 请选择 —</option>'+opts(allPos())+'</select></div>';
+  h+='</div></div>';
+
+  /* 三、外官家眷 */
+  h+='<div id="grpWai" style="display:none">';
+  h+='<div class="'+cls+'"><label>外官家眷</label>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">职任</span><select id="w_office"><option value="">— 请选择 —</option>'+opts(P.waiOffice)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">驻节</span><select id="w_place"><option value="">— 请选择 —</option>'+opts(P.waiPlace)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">位分</span><select id="w_pos"><option value="">— 请选择 —</option>'+opts(allPos())+'</select></div>';
+  h+='</div></div>';
+
+  /* 四、世家女眷 */
+  h+='<div id="grpNoble" style="display:none">';
+  h+='<div class="'+cls+'"><label>世家女眷</label>';
+  h+='<p class="'+p+'sub">门第 → 家族 → 位分，三级须层层相配。未嫁系取娘家，妻媳/妾婢系取夫家。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">门第</span><select id="idRank"><option value="">— 请选择 —</option>'+opts(P.rank)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">家族</span><select id="idHouse"><option value="">— 请先选门第 —</option></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">位分</span><select id="idPos"><option value="">— 请选择 —</option>'+opts(allPos())+'</select></div>';
+  h+='</div></div>';
+
+  /* 五、宫廷女官 */
+  h+='<div id="grpNy" style="display:none">';
+  h+='<div class="'+cls+'"><label>宫廷女官</label>';
+  h+='<p class="'+p+'sub">终身居宫中，不得外宿；无婆母，掌事为其上官。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">署局</span><select id="n_bureau"><option value="">— 请选择 —</option>'+opts(P.bureau)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">职名</span><select id="n_duty"><option value="">— 请选择 —</option>'+opts(P.duty)+'</select></div>';
+  h+='</div></div>';
+
+  /* 居所预览 */
+  h+='<div class="'+p+'live" id="sgLive">— 选定身份后，此处显示对应的居所与宅制 —</div>';
+
+  /* 自定义身份 */
+  h+='<div class="'+cls+'"><label>身份（自定义）</label>';
+  h+='<p class="'+p+'sub">想手打身份就填这里，会覆盖上面的选择。建议按「家族＋位分」或「爵级＋婚否」的写法。</p>';
+  h+='<input type="text" id="c_identity" placeholder="如：镇北侯府守节媳 / 已嫁公主 / 扬州知府之庶女"></div>';
+
+  /* 年龄 */
+  h+='<div class="'+cls+'"><label>年龄</label>';
+  h+='<p class="'+p+'sub">半绑定：按身份给建议区间，允许小幅溢出（±3 岁内）。</p>';
+  h+='<input type="number" id="f_age" min="18" max="50" placeholder="18–50">';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_age" placeholder="手打年龄"></div></div>';
+
+  /* 性格 */
+  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">底色（本性，定破防后反转）× 表相（示人的姿态）。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">底色</span><select id="f_temper"><option value="">— 请选择 —</option>'+opts(P.temper)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">表相</span><select id="f_facade"><option value="">— 请选择 —</option>'+opts(P.facade)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_personality" placeholder="手打性格"></div></div>';
+
+  /* 身材 */
+  h+='<div class="'+cls+'"><label>身材</label><p class="'+p+'sub">骨架 × 身量 × 局部 × 乳 × 臀，五维组合。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">骨架</span><select id="f_build"><option value="">— 请选择 —</option>'+opts(P.build)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">身量</span><select id="f_stature"><option value="">— 请选择 —</option>'+opts(P.stature)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">局部</span><select id="f_detail"><option value="">— 请选择 —</option>'+opts(P.detail)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">乳</span><select id="f_bosom"><option value="">— 请选择 —</option>'+opts(P.bosom)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">臀</span><select id="f_hip"><option value="">— 请选择 —</option>'+opts(P.hip)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_figure" placeholder="手打身材"></div></div>';
+
+  /* 性癖 */
+  h+='<div class="'+cls+'"><label>性癖</label><p class="'+p+'sub">触发通道 × 偏好强度 × 场景，三维组合成句。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">通道</span><select id="f_fetch"><option value="">— 请选择 —</option>'+opts(P.fetCh)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">强度</span><select id="f_fetint"><option value="">— 请选择 —</option>'+opts(P.fetInt)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">场景</span><select id="f_fetsc"><option value="">— 请选择 —</option>'+opts(P.fetSc)+'</select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_fetish" placeholder="手打性癖"></div></div>';
+
+  /* 敏感点 */
+  h+='<div class="'+cls+'"><label>敏感点</label><p class="'+p+'sub">主（最易失守）＋ 次（可作铺垫），两处须不同。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_sensMain"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_sensSub"><option value="">— 请选择 —</option>'+opts(P.sensBody)+'<optgroup label="性征">'+opts(P.sensSex)+'</optgroup></select></div>';
+  h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_sensitive" placeholder="手打敏感点"></div></div>';
+  return h;
+}
+
+/* ================= 交互 ================= */
+function curCat(){return val('idCat');}
+function fillOffices(){
+  var r=val('g_rank'),s=el('g_office'); if(!s) return;
+  var list=(r&&P.guanOffice[r])?P.guanOffice[r]:[];
+  s.innerHTML='<option value="">'+(r?'— 请选择 —':'— 请先选品级 —')+'</option>'+opts(list);
+}
+function fillHouses(){
+  var r=val('idRank'),s=el('idHouse'); if(!s) return;
+  var list=(r&&P.houses[r])?P.houses[r]:[];
+  s.innerHTML='<option value="">'+(r?'— 请选择 —':'— 请先选门第 —')+'</option>'+opts(list);
+}
+function onCat(){
+  var c=curCat();
+  [['grpZong','宗室皇亲'],['grpGuan','朝官家眷'],['grpWai','外官家眷'],['grpNoble','世家女眷'],['grpNy','宫廷女官']]
+    .forEach(function(x){ var g=el(x[0]); if(g) g.style.display=(c===x[1])?'block':'none'; });
+  showLive();
+}
+function onZRel(){
+  var r=val('z_rel');
+  var a=el('zNv'),b=el('zFu');
+  if(a) a.style.display=(r==='宗室女')?'block':'none';
+  if(b) b.style.display=(r==='宗室妇')?'block':'none';
+  showLive();
+}
+/* 身份串 */
+function identity(){
+  var c=curCat();
+  if(c==='宗室皇亲'){
+    if(val('z_rel')==='宗室妇') return val('z_wife');
+    var r=val('z_rank'),m=val('z_marry');
+    return (r&&m)?(m+r):'';
+  }
+  if(c==='朝官家眷'){ var a=val('g_rank'),b=val('g_office'),p=val('g_pos'); return (a&&b&&p)?(a+b+'之'+p):''; }
+  if(c==='外官家眷'){ var a2=val('w_place'),b2=val('w_office'),p2=val('w_pos'); return (b2&&p2)?((a2||'')+b2+'之'+p2):''; }
+  if(c==='世家女眷'){ var h=val('idHouse'),p3=val('idPos'); return (h&&p3)?(h+p3):''; }
+  if(c==='宫廷女官'){ var bu=val('n_bureau'),du=val('n_duty'); return (bu&&du)?(bu+du):''; }
+  return '';
+}
+/* 居所预览 */
+function liveInfo(){
+  var c=curCat(),out={live:'',zone:'',mz:'',pos:''};
+  if(c==='宗室皇亲'){
+    if(val('z_rel')==='宗室妇'){ var w=val('z_wife'); out.live=P.zWifeLive[w]||''; out.zone='A2 王府'; out.mz=motherOf(c,'','宗室妇',''); }
+    else{ var r=val('z_rank'),m=val('z_marry'); if(r&&m){ out.live=P.zLive[r+'|'+m]||''; out.zone=P.zZone[r+'|'+m]||''; out.mz=motherOf(c,'','宗室女',r); } }
+  } else if(c==='朝官家眷'){
+    var gr=val('g_rank'),go=val('g_office'),gp=val('g_pos');
+    if(gr) out.live=P.guanHome[gr]||'';
+    out.mz=motherOf(c,gp,'','');
+  } else if(c==='外官家眷'){
+    var wo=val('w_office'),wp=val('w_pos');
+    if(wo) out.live=P.waiLive[wo]||'';
+    out.mz=motherOf(c,wp,'','');
+  } else if(c==='世家女眷'){
+    var nr=val('idRank'),nh=val('idHouse'),np=val('idPos');
+    if(nr) out.zone=P.nobleZone[nr]||'';
+    if(nh) out.live=nh+'（'+(out.zone||'')+'）';
+    out.mz=motherOf(c,np,'','');
+  } else if(c==='宫廷女官'){
+    if(val('n_bureau')){ out.live='内廷·六局廨舍／掖庭偏院（终身居宫中，不得外宿）'; out.zone='A1 宫城'; out.mz='掌事姑姑（本局尚宫／司正）'; }
+  }
+  return out;
+}
+function showLive(){
+  var box=el('sgLive'); if(!box) return;
+  var li=liveInfo();
+  if(!li.live && !li.mz){ box.innerHTML='— 选定身份后，此处显示对应的居所与宅制 —'; return; }
+  var h='';
+  if(li.live) h+='<b>居所：</b>'+li.live;
+  if(li.zone) h+='<br><b>宅制：</b>'+li.zone;
+  if(li.mz && li.mz!=='—') h+='<br><b>主母位：</b>'+li.mz;
+  var id=identity();
+  if(id) h+='<br><span class="ok">✓ 身份：「'+id+'」</span>';
+  box.innerHTML=h;
+}
+function suggestAge(){
+  var c=curCat(),p='';
+  if(c==='世家女眷') p=val('idPos'); else if(c==='朝官家眷') p=val('g_pos'); else if(c==='外官家眷') p=val('w_pos');
+  var a=AGE[p];
+  if(!a){
+    if(c==='宗室皇亲'){
+      if(val('z_rel')==='宗室妇') a=[22,45];
+      else a=(val('z_marry')==='已嫁')?[20,40]:[18,34];
+    } else if(c==='宫廷女官') a=[20,45];
+    else if(c==='朝官家眷'||c==='外官家眷') a=[18,32];
+  }
+  if(a){ setv('f_age',String(a[0]+Math.floor(Math.random()*(a[1]-a[0]+1)))); }
+}
+function collect(){
+  var o={};
+  o.identity = val('c_identity') || identity();
+  o.age = val('c_age') || val('f_age');
+  o.personality = val('c_personality') || (function(){var a=val('f_temper'),b=val('f_facade');return (a&&b)?(a+'·'+b):'';})();
+  o.figure = val('c_figure') || (function(){
+    var a=[val('f_build'),val('f_stature'),val('f_detail'),val('f_bosom'),val('f_hip')];
+    for(var i=0;i<a.length;i++){ if(!a[i]) return ''; }
+    return a.join('·');
+  })();
+  o.fetish = val('c_fetish') || (function(){
+    var c=val('f_fetch'),i=val('f_fetint'),s=val('f_fetsc');
+    if(!c||!i||!s) return '';
+    return P.fetIntW[i]+P.fetChW[c]+'，'+P.fetScW[s]+'尤甚';
+  })();
+  o.sensitive = val('c_sensitive') || (function(){
+    var a=val('f_sensMain'),b=val('f_sensSub'); return (a&&b)?('主：'+a+'｜次：'+b):'';
+  })();
+  return o;
+}
+var NAMES=['身份','年龄','性格','身材','性癖','敏感点'];
+var KEYS=['identity','age','personality','figure','fetish','sensitive'];
+function toParts(o){
+  var p=[]; for(var i=0;i<KEYS.length;i++){ p.push(NAMES[i]+'='+(o[KEYS[i]]||'')); }
+  var li=liveInfo(); if(li.live) p.push('居所='+li.live.split('（')[0]);
+  return p.join('｜');
+}
+function check(o){
+  for(var i=0;i<KEYS.length;i++){ if(!o[KEYS[i]]) return '「'+NAMES[i]+'」尚未填写，请补全。'; }
+  var age=o.age;
+  if(age&&(parseInt(age)<18||parseInt(age)>50||isNaN(parseInt(age)))) return '年龄必须在 18–50 之间。';
+  var c=curCat();
+  if(c==='宗室皇亲'&&val('z_rel')==='宗室女'&&(!val('z_rank')||!val('z_marry'))) return '宗室女需选爵级与婚否。';
+  if(c==='宗室皇亲'&&val('z_rel')==='宗室妇'&&!val('z_wife')) return '宗室妇需选封号。';
+  return '';
+}
+function randomAll(){
+  emptyAll();
+  var c=rnd(P.cat); setv('idCat',c); onCat();
+  if(c==='宗室皇亲'){
+    var rel=(Math.random()<0.62)?'宗室女':'宗室妇'; setv('z_rel',rel); onZRel();
+    if(rel==='宗室女'){ var r=rnd(P.zRank),m=rnd(P.zMarry); setv('z_rank',r); setv('z_marry',m); }
+    else { setv('z_wife',rnd(P.zWife)); }
+  } else if(c==='朝官家眷'){
+    var gr=rnd(P.guanRank); setv('g_rank',gr); fillOffices();
+    setv('g_office',rnd(P.guanOffice[gr])); setv('g_pos',rnd(allPos()));
+  } else if(c==='外官家眷'){
+    setv('w_office',rnd(P.waiOffice)); setv('w_place',rnd(P.waiPlace)); setv('w_pos',rnd(allPos()));
+  } else if(c==='世家女眷'){
+    var nr=rnd(P.rank); setv('idRank',nr); fillHouses();
+    setv('idHouse',rnd(P.houses[nr])); setv('idPos',rnd(allPos()));
+  } else {
+    setv('n_bureau',rnd(P.bureau)); setv('n_duty',rnd(P.duty));
+  }
+  suggestAge();
+  setv('f_temper',rnd(P.temper)); setv('f_facade',rnd(P.facade));
+  setv('f_build',rnd(P.build)); setv('f_stature',rnd(P.stature));
+  setv('f_detail',rnd(P.detail)); setv('f_bosom',rnd(P.bosom)); setv('f_hip',rnd(P.hip));
+  setv('f_fetch',rnd(P.fetCh)); setv('f_fetint',rnd(P.fetInt)); setv('f_fetsc',rnd(P.fetSc));
+  var all=P.sensBody.concat(P.sensSex);
+  var a=rnd(all),b=rnd(all); while(b===a){ b=rnd(all); }
+  setv('f_sensMain',a); setv('f_sensSub',b);
+  showLive();
+}
+function bindFields(){
+  var c=el('idCat'); if(c) c.onchange=onCat;
+  var z=el('z_rel'); if(z) z.onchange=onZRel;
+  /* 联动下拉：既要重填子选项，也要刷新居所预览与年龄建议 */
+  var gr=el('g_rank'); if(gr) gr.onchange=function(){ fillOffices(); suggestAge(); showLive(); };
+  var nr=el('idRank'); if(nr) nr.onchange=function(){ fillHouses(); suggestAge(); showLive(); };
+  ['g_pos','w_pos','idPos','z_rank','z_marry','z_wife',
+   'g_office','w_office','w_place','idHouse','n_bureau','n_duty']
+    .forEach(function(k){ var e=el(k); if(e) e.onchange=function(){ suggestAge(); showLive(); }; });
+}
+
+document.getElementById('sgFields').innerHTML=buildFields('sg-field','sg-');
+bindFields();
+document.getElementById('sgRand').onclick=function(){
+  randomAll();
+  document.getElementById('sgHint').textContent='已随机填充，可手动微调。';
+};
+document.getElementById('sgStart').onclick=function(){
+  var o=collect(); var err=check(o);
+  var hint=document.getElementById('sgHint');
+  if(err){ hint.textContent=err; return; }
+  var t='【生成目标｜自定义：'+toParts(o)+'】';
+  function slash(cmd){
+    return new Promise(function(res,rej){
+      try{
+        if(typeof triggerSlash==='function'){ var p=triggerSlash(cmd); if(p&&p.then){p.then(res,rej);}else{res();} return; }
+        if(window.TavernHelper&&typeof TavernHelper.triggerSlash==='function'){ var p2=TavernHelper.triggerSlash(cmd); if(p2&&p2.then){p2.then(res,rej);}else{res();} return; }
+        if(window.SillyTavern&&typeof SillyTavern.getContext==='function'){ var c=SillyTavern.getContext(); if(c&&typeof c.executeSlashCommands==='function'){ var p3=c.executeSlashCommands(cmd); if(p3&&p3.then){p3.then(res,rej);}else{res();} return; } }
+        rej(new Error('未检测到酒馆助手接口'));
+      }catch(e){ rej(e); }
+    });
+  }
+  hint.textContent='生成中…';
+  slash('/send '+t).then(function(){
+    setTimeout(function(){
+      slash('/trigger').then(function(){ hint.textContent='✓ 已重新生成，AI 正在回应…'; }).catch(function(){ hint.textContent='⚠ 触发失败，请手动发送：'+t; });
+    },700);
+  }).catch(function(e){ hint.textContent='⚠ 发送失败：'+e; });
+};
+document.getElementById('sgTheme').onclick=function(){
+  var r=document.getElementById('root'); r.classList.toggle('light');
+  this.textContent= r.classList.contains('light')?'☀️':'🌙';
+};
+})();
+</script>
+</div>
+</div></div>
+<script>
+(function(){var b=document.querySelector('.sg-page');if(!b)return;
+  var mo=new MutationObserver(function(){var r=document.getElementById('root');
+    if(r&&r.classList.contains('light')){document.body.classList.add('light');}else{document.body.classList.remove('light');}});
+  mo.observe(document.body,{attributes:true,subtree:true,attributeFilter:['class']});})();
+</script>
+</body></html>
