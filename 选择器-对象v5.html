@@ -139,25 +139,26 @@ var P={
   },
 
   /* 性格 / 身材 / 性癖 / 敏感点 */
-  /* 性格＝本质＋外在：本质是心里真正要的／怕的，外在是给人看的样子；都只作构思索引，卡上必须写成两句描写 */
-  essTone:['惧被弃','争体面','求认可','要强','贪暖','不甘','自责','怯生','精算','纵性'],
-  facShow:['以礼自缚','以笑遮事','以冷拒人','以柔周旋','以骄压人','以懒避世','以忙自藏','以退守分'],
-  /* 身材＝身形原型（八类，同一原型内骨相成组自洽，杜绝「清瘦见骨＋丰盈」这类矛盾）；
-     原型名只是给 AI 的索引，卡面必须由 AI 展开成 1–2 句白描，不得把成语堆成「A·B·C」 */
-  shape:['娇小系','高挑系','清纤系','丰润系','劲健系','弱质系','爽利系','反差系'],
-  shapeNote:{
-    '娇小系':'五尺上下，骨架极窄，肩窄腕细，腰短臀圆，面圆',
-    '高挑系':'五尺六七，肩平颈长，腰细胸丰，胯宽腿长，行步幅度大',
-    '清纤系':'五尺三四，身姿薄直，肩薄腰细，胸前小巧，腿直臀薄',
-    '丰润系':'五尺二三，肩圆骨软，腰软腹微肉，胸前丰盈，臀圆腿润',
-    '劲健系':'五尺五六，肩背有力，腰紧腹平，臀翘腿健，肤作麦色',
-    '弱质系':'五尺二三，极瘦，锁骨腕骨突出，胸前平顺，面薄唇淡',
-    '爽利系':'瘦高，肩宽而平，腰直，胸前平顺，腿长臀平，短发',
-    '反差系':'骨架小，肩窄，腰细得惊人，胸前却饱满，娃娃脸'
+  /* 性格＝外在 × 内在（48 词三组，各选 1 词）；词只是索引，卡上必须各自展开成一句行为描写 */
+  persona:{
+    '明快暖调':['温柔','善良','开朗','活泼','天真','单纯','体贴','细心','耐心','乐观','大方','直率','幽默','古灵精怪','元气','软萌','粘人','爱撒娇'],
+    '沉静收敛':['内向','慢热','理性','感性','独立','要强','敏感','多疑','谨慎','随性','慵懒','佛系','傲娇','嘴硬心软','外冷内热','忽冷忽热'],
+    '阴郁锋利':['冷漠','自私','阴郁','偏执','控制欲强','占有欲强','善妒','记仇','暴躁','腹黑','病娇','斯德哥尔摩','拜金','势利']
   },
-  /* 性癖＝主驱动 × 次驱动（八类，各抽 1）；卡面由 AI 写成一句具体的小事，不写标签 */
-  fetDrive:['渴慕（情感心理）','予夺（权力角色）','触受（感官身体）','情境（场景氛围）',
-            '幻念（幻想主题）','相处（关系动态）','独钟（倾心类型）','隐癖（小众偏好）'],
+  /* 身材＝骨相×肉相×皮相×体态＋胸臀腿特写（七处各抽 1）；卡面由 AI 按黄金公式拼成一段白描 */
+  figBone:['娇小圆润（150–158，头略大肩窄，关节圆润，神态娇憨）','纤巧轻盈（155–162，骨架纤细，腕踝极细）','标准匀称（160–168，头身比适中，肩膀平滑）','高挑骨感（168–175，肩平颈长，锁骨如刀，衣架子气场）','宽大丰隆（165 以上，肩宽盆阔，成熟母性压迫感）'],
+  figFlesh:['皮包骨（几乎无脂，肋骨隐约，触感偏硬）','骨肉匀称（有肉而紧实，脱衣有肉穿衣显瘦）','微肉软糯（小腹薄软，臂有软肉，抱如人形抱枕）','极致沙漏（腰盈盈一握，脂全囤在胸臀）','肉感丰腴（全身饱满，坐有肉褶，腿有肉浪）'],
+  figSkin:['冷白皮（苍白透青，见皮下血管，病态清冷）','暖白皮（牛奶肌，温润滑腻）','蜜色肌肤（健康油亮，带着阳光温度）','特殊印记（锁骨深凹／背沟极深／腰窝明显／黑痣／淡妊娠纹／腿内侧黑印，择 1–2 处）'],
+  figPose:['慵懒无骨（靠墙慢步，坐下就瘫）','紧绷拘谨（含胸并腿，手不知往哪放，走路无声）','摇曳生姿（腰胯摆幅大，胸臀随步伐晃动）','英姿飒爽（步子大，抬头挺胸，动作利落）'],
+  figBust:['平坦微弱','盈盈一握','浑圆饱满','丰嫩柔垂（水滴形）','夸张巨乳','外扩型','八字形'],
+  figHip:['扁平瘦削','挺翘紧致（蜜桃臀）','宽大圆润（安产型）','下垂软肉','丰满肉浪'],
+  figLegs:['筷子腿（极细无肉）','直长腿（长且直）','肉感腿（大腿粗小腿细）','肌肉腿（紧实健美）','萝卜腿'],
+  /* 性癖＝感官×权力×心理×场景×反应（五处各抽 1）；卡面由 AI 拼成一段欲望剧本 */
+  fetSen:['视觉依赖','听觉依赖','触觉依赖','气味依赖','被注视'],
+  fetPow:['绝对臣服','主导掌控','互相拉扯','被动服务','主动奉献'],
+  fetPsy:['背德禁忌','极度羞耻','情感依赖','物化·身份落差','NTR·绿帽'],
+  fetScene:['半公开·露出','权力落差','束缚器物','角色扮演','极端刺激'],
+  fetResp:['隐忍无声','失控流泪','淫言浪语','身体痉挛','极度潮湿','事后状态'],
   /* 敏感点＝三档部位表（表露／私处／深处）；私处须三阶后、深处二处须四阶方可涉及 */
   sensBody:['口唇','舌','颈部','耳后','头皮','背部','下腹','大腿内侧','臀部'],
   sensSex:['乳房','乳头','乳晕','阴蒂','阴唇','G 点区域','肛周','肛门'],
@@ -186,19 +187,15 @@ function motherOf(cat,pos,rel,rank){
 
 /* ================= 工具 ================= */
 function opts(a){var s='';for(var i=0;i<a.length;i++){s+='<option value="'+a[i]+'">'+a[i]+'</option>';}return s;}
+function optsG(g){var s='';for(var k in g){s+='<optgroup label="'+k+'">'+opts(g[k])+'</optgroup>';}return s;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function el(id){return document.getElementById(id);}
 function val(id){var e=el(id);return e?String(e.value).trim():'';}
 function setv(id,v){var e=el(id);if(e)e.value=v;}
 function allPos(){return P.posSYS['未嫁系'].concat(P.posSYS['妻媳系'],P.posSYS['妾婢系']);}
 function docMarry(){return val('z_marry')||'未嫁';}
-function emptyAll(){['c_identity','c_age','c_ess','c_fac','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});}
-function driveName(v){return String(v||'').split('（')[0];}
-function updateShapeHint(){
-  var box=el('shapeHint'); if(!box) return;
-  var v=val('f_shape');
-  box.innerHTML=(v&&P.shapeNote[v])?('<b>'+v+'</b>　'+P.shapeNote[v]+'　<span style="opacity:.75">（卡面由 AI 展开成白描句）</span>'):'— 选择原型后，此处显示它的骨相要点 —';
-}
+function persAll(){var a=[];for(var k in P.persona){a=a.concat(P.persona[k]);}return a;}
+function emptyAll(){['c_identity','c_age','c_out','c_inn','c_figure','c_fetish','c_sensitive'].forEach(function(k){setv(k,'');});}
 
 /* ================= 字段构建 ================= */
 function buildFields(cls,p){
@@ -268,22 +265,30 @@ function buildFields(cls,p){
   h+='<div class="'+p+'cust">或自定义：<input type="text" id="c_age" placeholder="手打年龄"></div></div>';
 
   /* 性格 */
-  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">本质（心里真正要的／怕的）＋ 外在（给人看的样子），各一句行为描写。<b>留空则由 AI 按身份家世自定。</b></p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">本质</span><select id="f_ess"><option value="">— 不指定 —</option>'+opts(P.essTone)+'</select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">外在</span><select id="f_fac"><option value="">— 不指定 —</option>'+opts(P.facShow)+'</select></div>';
-  h+='<div class="'+p+'cust">或手打本质：<input type="text" id="c_ess" placeholder="如：怕被人丢下，凡事都抢在前头做"></div>';
-  h+='<div class="'+p+'cust">或手打外在：<input type="text" id="c_fac" placeholder="如：人前总是先笑，话说三分就收"></div></div>';
+  h+='<div class="'+cls+'"><label>性格</label><p class="'+p+'sub">外在（给人看的样子）× 内在（心里真正要的／怕的），各选一词、卡上各自展开成一句行为描写。<b>留空则由 AI 按身份家世自定。</b></p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">外在</span><select id="f_out"><option value="">— 不指定 —</option>'+optsG(P.persona)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">内在</span><select id="f_inn"><option value="">— 不指定 —</option>'+optsG(P.persona)+'</select></div>';
+  h+='<div class="'+p+'cust">或手打外在：<input type="text" id="c_out" placeholder="如：人前总是先笑，话说三分就收"></div>';
+  h+='<div class="'+p+'cust">或手打内在：<input type="text" id="c_inn" placeholder="如：怕被人丢下，凡事都抢在前头做"></div></div>';
 
   /* 身材 */
-  h+='<div class="'+cls+'"><label>身材 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（选身形原型）</span></label><p class="'+p+'sub">选一个 <b>身形原型</b>——同一原型内的骨相是配套的，不会抽出「骨瘦如柴却胸前丰盈」这种自相矛盾。卡面由 AI 展开成 <b>1–2 句白描</b>，不会写成词条清单。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">原型</span><select id="f_shape"><option value="">— 请选择 —</option>'+opts(P.shape)+'</select></div>';
-  h+='<div id="shapeHint" style="font-size:12px;color:var(--sg-muted);line-height:1.55;margin:2px 0 6px;">— 选择原型后，此处显示它的骨相要点 —</div>';
-  h+='<div class="'+p+'cust">或直接手打整句：<input type="text" id="c_figure" placeholder="如：身量五尺三四，身姿薄直，肩薄锁骨清浅…"></div></div>';
+  h+='<div class="'+cls+'"><label>身材</label><p class="'+p+'sub">七处各选一：骨相 × 肉相 × 皮相 × 体态 ＋ 胸／臀／腿特写。卡面由 AI 按「黄金公式」拼成 <b>一段 60–120 字白描</b>，不会输出孤立标签。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">骨相</span><select id="f_bone"><option value="">— 不指定 —</option>'+opts(P.figBone)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">肉相</span><select id="f_flesh"><option value="">— 不指定 —</option>'+opts(P.figFlesh)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">皮相</span><select id="f_skin"><option value="">— 不指定 —</option>'+opts(P.figSkin)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">体态</span><select id="f_pose"><option value="">— 不指定 —</option>'+opts(P.figPose)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">胸</span><select id="f_bust"><option value="">— 不指定 —</option>'+opts(P.figBust)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">臀</span><select id="f_hip"><option value="">— 不指定 —</option>'+opts(P.figHip)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">腿</span><select id="f_legs"><option value="">— 不指定 —</option>'+opts(P.figLegs)+'</select></div>';
+  h+='<div class="'+p+'cust">或直接手打整句：<input type="text" id="c_figure" placeholder="如：她生得高挑骨感，肩平颈长，双腿笔直…"></div></div>';
 
   /* 性癖 */
-  h+='<div class="'+cls+'"><label>性癖 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">这是给 <b>AI 的内部设定</b>，只用来保持描写一致。<b>留空＝隐藏待探</b>：卡片上照常把真值写给你看，但戏里那个采花贼开局不会知道。</p>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">主</span><select id="f_fetMain"><option value="">— 隐藏待探 —</option>'+opts(P.fetDrive)+'</select></div>';
-  h+='<div class="'+p+'row"><span class="'+p+'mini">次</span><select id="f_fetSub"><option value="">— 不填 —</option>'+opts(P.fetDrive)+'</select></div>';
+  h+='<div class="'+cls+'"><label>性癖 <span style="font-weight:400;color:var(--sg-muted);font-size:12px;">（可留空）</span></label><p class="'+p+'sub">五处各选一：感官 × 权力 × 心理 × 场景 × 反应。卡面由 AI 拼成 <b>一段欲望剧本</b>。<b>留空＝隐藏待探</b>：卡片上照常把真值写给你看，但戏里那个采花贼开局不会知道。</p>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">感官</span><select id="f_sen"><option value="">— 不指定 —</option>'+opts(P.fetSen)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">权力</span><select id="f_pow"><option value="">— 不指定 —</option>'+opts(P.fetPow)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">心理</span><select id="f_psy"><option value="">— 不指定 —</option>'+opts(P.fetPsy)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">场景</span><select id="f_scene"><option value="">— 不指定 —</option>'+opts(P.fetScene)+'</select></div>';
+  h+='<div class="'+p+'row"><span class="'+p+'mini">反应</span><select id="f_resp"><option value="">— 不指定 —</option>'+opts(P.fetResp)+'</select></div>';
   h+='<div class="'+p+'cust">或手打（留空即隐藏待探）：<input type="text" id="c_fetish" placeholder="不填最好，留给探索"></div></div>';
 
   /* 敏感点 */
@@ -387,18 +392,23 @@ function collect(){
   o.identity = val('c_identity') || identity();
   o.age = val('c_age') || val('f_age');
   o.personality = (function(){
-    var a=val('c_ess')||val('f_ess'), b=val('c_fac')||val('f_fac');
+    var a=val('c_out')||val('f_out'), b=val('c_inn')||val('f_inn');
     if(!a&&!b) return '';
-    return '本质：'+(a||'（由你按身份与家世自定一句）')+'；外在：'+(b||'（由你按身份与家世自定一句）');
+    return '外在：'+(a||'（由你按身份与家世自选一词）')+'；内在：'+(b||'（由你按身份与家世自选一词）');
   })();
   o.figure = val('c_figure') || (function(){
-    var s=val('f_shape');
-    return s ? (s+'（按该原型的骨相要点展开成 1–2 句白描，❌ 不得把成语堆成「A·B·C」）') : '';
+    var dims=[['骨相',val('f_bone')],['肉相',val('f_flesh')],['皮相',val('f_skin')],['体态',val('f_pose')],['胸',val('f_bust')],['臀',val('f_hip')],['腿',val('f_legs')]];
+    var got=[];
+    for(var i=0;i<dims.length;i++){ if(dims[i][1]) got.push(dims[i][0]+'：'+dims[i][1]); }
+    if(!got.length) return '';
+    return got.join('；')+'（按黄金公式 [骨相]＋[肉相]＋[胸臀腿特写]＋[皮相]＋[体态] 拼成一段 60–120 字白描，❌ 不得输出孤立标签或「A×B×C」罗列）';
   })();
   o.fetish = val('c_fetish') || (function(){
-    var a=driveName(val('f_fetMain')), b=driveName(val('f_fetSub'));
-    if(!a) return '';
-    return '主：'+a+(b?('｜次：'+b):'');
+    var dims=[['感官',val('f_sen')],['权力',val('f_pow')],['心理',val('f_psy')],['场景',val('f_scene')],['反应',val('f_resp')]];
+    var got=[];
+    for(var i=0;i<dims.length;i++){ if(dims[i][1]) got.push(dims[i][0]+'：'+dims[i][1]); }
+    if(!got.length) return '';
+    return got.join('｜')+'（按黄金公式拼成一段 60–120 字欲望剧本，写清她为何而动、何时失守、失守时什么样子，❌ 不得罗列标签）';
   })();
   o.sensitive = val('c_sensitive') || (function(){
     var a=val('f_sensMain'),b=val('f_sensSub'); return (a&&b)?('主：'+a+'｜次：'+b):'';
@@ -410,7 +420,7 @@ var KEYS=['identity','age','personality','figure','fetish','sensitive'];
 /* 留空项的呈报口径：性格/性癖/敏感点不填，不是「缺失」，而是「交给 AI 内部处理」；
    性癖／敏感点＝AI 内部真值，【目标卡】照常写全真值并附探知标记，只是正文按主角认知分寸推进 */
 var BLANK_WORD={
-  personality:'未指定（请你按身份与家世自定「本质」与「外在」各一句描写）',
+  personality:'未指定（请你按身份与家世自选「外在」「内在」各一词，各展开成一句行为描写）',
   fetish:'未指定（你内部自行设定真值即可；【目标卡】照常写全真值并附探知标记，正文按主角认知分寸推进）',
   sensitive:'未指定（你内部自行设定真值即可，按部位表抽主／次各一处；【目标卡】照常写全真值并附探知标记，正文按主角认知分寸推进）'
 };
@@ -456,19 +466,19 @@ function randomAll(){
     setv('n_bureau',rnd(P.bureau)); setv('n_duty',rnd(P.duty));
   }
   suggestAge();
-  /* 性格：随机给一组构思索引（本质／外在），卡面仍由 AI 展开成两句行为描写 */
-  setv('f_ess',rnd(P.essTone)); setv('f_fac',rnd(P.facShow));
-  /* 身材：随机给一个身形原型（卡面仍由 AI 展开成白描） */
-  setv('f_shape',rnd(P.shape)); updateShapeHint();
+  /* 性格：随机给一组词（外在／内在），卡面仍由 AI 各自展开成行为句 */
+  var pa=persAll(); setv('f_out',rnd(pa)); setv('f_inn',rnd(pa));
+  /* 身材：七维随机（卡面仍由 AI 按黄金公式拼成白描段） */
+  setv('f_bone',rnd(P.figBone)); setv('f_flesh',rnd(P.figFlesh)); setv('f_skin',rnd(P.figSkin));
+  setv('f_pose',rnd(P.figPose)); setv('f_bust',rnd(P.figBust)); setv('f_hip',rnd(P.figHip)); setv('f_legs',rnd(P.figLegs));
   /* 性癖／敏感点：一律留空＝隐藏待探（真值由 AI 内部设定，玩家自己探） */
-  setv('f_fetMain',''); setv('f_fetSub','');
+  setv('f_sen',''); setv('f_pow',''); setv('f_psy',''); setv('f_scene',''); setv('f_resp','');
   setv('f_sensMain',''); setv('f_sensSub','');
   showLive();
 }
 function bindFields(){
   var c=el('idCat'); if(c) c.onchange=onCat;
   var z=el('z_rel'); if(z) z.onchange=onZRel;
-  var sh=el('f_shape'); if(sh) sh.onchange=updateShapeHint;
   /* 联动下拉：既要重填子选项，也要刷新居所预览与年龄建议 */
   var gr=el('g_rank'); if(gr) gr.onchange=function(){ fillOffices(); suggestAge(); showLive(); };
   var nr=el('idRank'); if(nr) nr.onchange=function(){ fillHouses(); suggestAge(); showLive(); };
