@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ── 语义配色：详见 design-spec.md「UI 设计 / 语义配色」 ── */
+  --c-surface: #f7f1e6; /* 绢底：窗纸透光 */
+  --c-surface-raised: #fffcf6; /* 纸面：卡片 */
+  --c-primary: #8a5a3b; /* 檀木：主强调 */
+  --c-primary-soft: #c8a883; /* 摩挲发亮处：未选中项 */
+  --c-accent: #b23a30; /* 朱砂：沦陷与情欲 */
+  --c-secondary: #5f7d6a; /* 琉璃瓦青苔：宫线 */
+  --c-danger: #8c1f18; /* 暗纹被认出：危险 */
+  --c-text: #2b2118; /* 墨 */
+  --c-text-muted: #8a7d6b; /* 褪色旧帖 */
+  --c-border: #cbb894; /* 册页泛黄的边 */
+  --c-seal: #a8322a; /* 落款印章 */
+
+  --font-body: 'Songti SC', 'Source Han Serif SC', 'Noto Serif CJK SC', 'SimSun', serif;
+  --font-accent: 'Kaiti SC', 'STKaiti', 'KaiTi', 'Songti SC', serif;
+
+  --ease-gentle: cubic-bezier(0.33, 0.9, 0.35, 1);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--c-text);
+  background: transparent;
+}

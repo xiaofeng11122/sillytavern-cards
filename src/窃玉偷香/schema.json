@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "default": {},
+  "type": "object",
+  "properties": {
+    "系统": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "危险度": {
+          "default": 0,
+          "type": "number"
+        },
+        "宫线进度": {
+          "default": 0,
+          "type": "number"
+        }
+      }
+    },
+    "主角": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "当前伪装身份": {
+          "default": "",
+          "type": "string"
+        }
+      }
+    },
+    "当前目标": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "姓名": {
+          "default": "",
+          "type": "string"
+        },
+        "年龄": {
+          "default": 0,
+          "type": "number"
+        },
+        "身份": {
+          "default": "",
+          "type": "string"
+        },
+        "性格": {
+          "default": "",
+          "type": "string"
+        },
+        "身材": {
+          "default": "",
+          "type": "string"
+        },
+        "性癖": {
+          "default": "",
+          "type": "string"
+        },
+        "敏感点": {
+          "default": "",
+          "type": "string"
+        },
+        "性经历": {
+          "default": "",
+          "type": "string"
+        },
+        "沦陷值": {
+          "default": 0,
+          "type": "number"
+        },
+        "信物": {
+          "default": "",
+          "type": "string"
+        },
+        "关系阶段": {
+          "default": "陌生",
+          "type": "string",
+          "enum": [
+            "陌生",
+            "相识",
+            "熟络",
+            "暧昧",
+            "沦陷",
+            "得手",
+            "情人"
+          ]
+        }
+      }
+    },
+    "女帝": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "攻略阶段": {
+          "default": "接触前",
+          "type": "string",
+          "enum": [
+            "接触前",
+            "亲近期",
+            "沦陷期"
+          ]
+        },
+        "真相已揭示": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "已攻略目标": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "description": "目标姓名"
+      },
+      "additionalProperties": {
+        "default": {},
+        "type": "object",
+        "properties": {
+          "身份": {
+            "default": "",
+            "type": "string"
+          },
+          "圈层": {
+            "default": "官宦",
+            "type": "string",
+            "enum": [
+              "官宦",
+              "富商",
+              "青楼",
+              "江湖",
+              "良家",
+              "宫中"
+            ]
+          },
+          "信物": {
+            "default": "",
+            "type": "string"
+          },
+          "关系状态": {
+            "default": "情人",
+            "type": "string",
+            "enum": [
+              "情人",
+              "了结"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
