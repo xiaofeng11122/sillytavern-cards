@@ -104,48 +104,6 @@
           "type": "boolean"
         }
       }
-    },
-    "已攻略目标": {
-      "default": {},
-      "type": "object",
-      "propertyNames": {
-        "type": "string",
-        "description": "目标姓名"
-      },
-      "additionalProperties": {
-        "default": {},
-        "type": "object",
-        "properties": {
-          "身份": {
-            "default": "",
-            "type": "string"
-          },
-          "圈层": {
-            "default": "官宦",
-            "type": "string",
-            "enum": [
-              "官宦",
-              "富商",
-              "青楼",
-              "江湖",
-              "良家",
-              "宫中"
-            ]
-          },
-          "信物": {
-            "default": "",
-            "type": "string"
-          },
-          "关系状态": {
-            "default": "情人",
-            "type": "string",
-            "enum": [
-              "情人",
-              "了结"
-            ]
-          }
-        }
-      }
     }
   }
 }

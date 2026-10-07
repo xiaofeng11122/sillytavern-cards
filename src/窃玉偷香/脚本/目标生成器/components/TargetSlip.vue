@@ -3,28 +3,27 @@
     <header class="qy-slip-head">
       <span class="qy-slip-seal">{{ slip.圈层 }}</span>
       <span class="qy-slip-name">{{ slip.姓名 }}</span>
-      <span class="qy-slip-age">{{ slip.年龄 }} 岁</span>
-      <span class="qy-slip-identity">{{ slip.身份 }}</span>
+      <span class="qy-slip-meta">{{ slip.身份 }} · {{ slip.身材 }} · {{ slip.年龄 }}岁</span>
     </header>
 
     <dl class="qy-slip-detail">
       <div>
         <dt>性格</dt>
-        <dd>{{ slip.性格 }}</dd>
+        <dd>
+          <span v-for="(part, index) in characterParts" :key="part" class="qy-part">
+            <span v-if="index" class="qy-part-sep">｜</span>{{ part }}
+          </span>
+        </dd>
       </div>
       <div>
-        <dt>身材</dt>
-        <dd>{{ slip.身材 }}</dd>
+        <dt>敏感点</dt>
+        <dd>{{ slip.敏感点 }}</dd>
       </div>
       <div>
         <dt>性癖</dt>
         <dd>{{ slip.性癖 }}</dd>
       </div>
       <div>
-        <dt>敏感点</dt>
-        <dd>{{ slip.敏感点 }}</dd>
-      </div>
-      <div class="qy-wide">
         <dt>性经历</dt>
         <dd>{{ slip.性经历 }}</dd>
       </div>
@@ -34,7 +33,7 @@
       <span class="qy-note-label">苦主</span>{{ slip.苦主 }}
     </p>
     <p v-if="replacing" class="qy-slip-warn">
-      现下的目标已是「{{ replacing }}」。换人之后，她的记录需由叙事并入名册（AI 依条目处理）。
+      现下的 {{ replacing }} 已到手，收下此签会先把她记进名册。
     </p>
 
     <footer class="qy-slip-actions">
@@ -47,14 +46,17 @@
 <script setup lang="ts">
 import type { DrawnTarget } from '../data';
 
-defineProps<{
+const props = defineProps<{
   slip: DrawnTarget;
-  /** 当前目标已得手/为情人时，换人会丢掉她的记录，这里显式提醒 */
+  /** 当前目标已得手/为情人时，收新签会先归档她 */
   replacing: string;
   shaking: boolean;
 }>();
 
 const emit = defineEmits<{ adopt: []; redraw: [] }>();
+
+/** 性格写成「外·…｜内·…」，展示时拆开更清楚 */
+const characterParts = computed(() => props.slip.性格.split('｜'));
 </script>
 
 <style lang="scss" scoped>
@@ -64,7 +66,7 @@ const emit = defineEmits<{ adopt: []; redraw: [] }>();
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
 /* 摇筒：不是「加载中」，是签条落定前的两下轻晃 */
@@ -113,47 +115,49 @@ const emit = defineEmits<{ adopt: []; redraw: [] }>();
   color: var(--c-primary);
 }
 
-.qy-slip-age {
+.qy-slip-meta {
   font-size: 11px;
   color: var(--c-text-muted);
-}
-
-.qy-slip-identity {
-  font-size: 11px;
-  color: var(--c-text);
 }
 
 .qy-slip-detail {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .qy-slip-detail > div {
-  border: 1px solid var(--c-border);
-  padding: 4px 6px;
-  background: var(--c-surface);
-}
-
-.qy-slip-detail .qy-wide {
-  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  line-height: 1.6;
 }
 
 .qy-slip-detail dt {
-  font-size: 10px;
+  flex: 0 0 auto;
+  width: 3.6em;
+  font-size: 10.5px;
   color: var(--c-text-muted);
   letter-spacing: 1px;
+  padding-top: 1px;
 }
 
 .qy-slip-detail dd {
+  flex: 1;
+  min-width: 0;
   font-size: 11.5px;
-  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.qy-part-sep {
+  color: var(--c-primary-soft);
+  margin: 0 2px;
 }
 
 .qy-slip-notes {
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--c-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .qy-note-label {
@@ -164,7 +168,7 @@ const emit = defineEmits<{ adopt: []; redraw: [] }>();
 
 .qy-slip-warn {
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--c-danger);
   border-left: 2px solid var(--c-danger);
   padding-left: 7px;

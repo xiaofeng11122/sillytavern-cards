@@ -33,13 +33,10 @@ export const Schema = z.object({
     攻略阶段: z.enum(['接触前', '亲近期', '沦陷期']).prefault('接触前'),
     真相已揭示: z.boolean().prefault(false), // 剧透开关：true 后女身/闺名段落方可渲染
   }).prefault({}),
-  已攻略目标: z.record(z.string().describe('目标姓名'), z.object({
-    身份: z.string().prefault(''),
-    圈层: z.enum(['官宦', '富商', '青楼', '江湖', '良家', '宫中']).prefault('官宦'), // 圈层：同圈层目标照面撞破判定用
-    信物: z.string().prefault(''), // '' 未赠
-    关系状态: z.enum(['情人', '了结']).prefault('情人'),
-  }).prefault({})).prefault({}),
 }).prefault({})
+
+// 注：已攻略名册**不进 MVU**。stat_data 会被「变量列表」条目整体注入提示词，名册越长每轮越贵；
+// 它只是给玩家翻看的记录，改存聊天变量 窃玉偷香.名册（由目标生成器脚本维护，见 创作规划.yaml「名册」）。
 
 // 类型导出：由 Schema 输出结构推导（不另立 schema 常量，遵守 zod-rule）
 export type SchemaRoot = z.output<typeof Schema>
@@ -47,5 +44,3 @@ export type SchemaSystem = z.output<typeof Schema>['系统']
 export type SchemaProtagonist = z.output<typeof Schema>['主角']
 export type SchemaTarget = z.output<typeof Schema>['当前目标']
 export type SchemaEmpress = z.output<typeof Schema>['女帝']
-export type SchemaConquered = z.output<typeof Schema>['已攻略目标']
-export type SchemaConqueredEntry = z.output<typeof Schema>['已攻略目标'][string]

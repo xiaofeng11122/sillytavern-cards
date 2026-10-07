@@ -4,6 +4,7 @@
       <span class="qy-tube" aria-hidden="true">签</span>
       <span class="qy-title">目标生成器</span>
       <span class="qy-summary">{{ summary }}</span>
+      <span v-if="rosterCount" class="qy-roster-badge">名册 {{ rosterCount }}</span>
       <span class="qy-flip">{{ ui.expanded ? '收起' : '展开' }}</span>
     </header>
 
@@ -33,6 +34,8 @@
           @redraw="draw"
         />
 
+        <RosterPanel :roster="roster" @hand-over="handOver" @archive="archiveCurrent" />
+
         <PalaceGate :palace="palace" :stage="stage" @open="openEmpress" />
       </div>
     </Transition>
@@ -43,12 +46,23 @@
 import AgeChips from './components/AgeChips.vue';
 import PalaceGate from './components/PalaceGate.vue';
 import PoolChips from './components/PoolChips.vue';
+import RosterPanel from './components/RosterPanel.vue';
 import TargetSlip from './components/TargetSlip.vue';
 import { AGE_BANDS, drawTarget } from './data';
-import { adoptTarget, startEmpressLine, takenNames, useStatData, useUiStore } from './store';
+import {
+  adoptTarget,
+  archiveCurrentTarget,
+  handRosterToNarrator,
+  startEmpressLine,
+  takenNames,
+  useRoster,
+  useStatData,
+  useUiStore,
+} from './store';
 
 const ui = useUiStore();
 const { statData, reload } = useStatData();
+const { roster, reload: reloadRoster } = useRoster();
 
 const shaking = ref(false);
 
@@ -56,6 +70,7 @@ const currentName = computed(() => String(_.get(statData.value, '当前目标.�
 const currentStage = computed(() => String(_.get(statData.value, '当前目标.关系阶段', '陌生')));
 const palace = computed(() => Number(_.get(statData.value, '系统.宫线进度', 0) ?? 0));
 const stage = computed(() => String(_.get(statData.value, '女帝.攻略阶段', '接触前')));
+const rosterCount = computed(() => Object.keys(roster.value).length);
 
 const summary = computed(() => {
   if (!currentName.value) {
@@ -64,7 +79,7 @@ const summary = computed(() => {
   return `当前目标 · ${currentName.value}（${currentStage.value}）`;
 });
 
-/** 已得手或已是情人时换人，会丢掉她的名册记录，需显式提醒 */
+/** 已到手的目标：收新签会先把她记进名册 */
 const replacing = computed(() =>
   currentName.value && ['得手', '情人'].includes(currentStage.value)
     ? `${currentName.value}（${currentStage.value}）`
@@ -75,7 +90,7 @@ const draw = () => {
   const result = drawTarget({
     pools: ui.pools,
     ageRange: AGE_BANDS[ui.ageIndex]?.range ?? null,
-    taken: takenNames(statData.value),
+    taken: takenNames(statData.value, roster.value),
   });
 
   if (!result) {
@@ -95,11 +110,34 @@ const adopt = () => {
   if (!ui.slip) {
     return;
   }
+  const archived = archiveCurrentTarget(statData.value);
   const name = ui.slip.姓名;
   adoptTarget(ui.slip);
   ui.slip = null;
   reload();
-  toastr.success(`已立 ${name} 为目标，伪装身份归零`, '目标生成器');
+  reloadRoster();
+  toastr.success(
+    archived ? `已把 ${archived} 记进名册，${name} 立为新目标` : `已立 ${name} 为目标，伪装身份归零`,
+    '目标生成器',
+  );
+};
+
+const archiveCurrent = () => {
+  const archived = archiveCurrentTarget(statData.value);
+  if (!archived) {
+    toastr.warning('当前目标还没到手，先不用记账', '目标生成器');
+    return;
+  }
+  reloadRoster();
+  toastr.success(`已把 ${archived} 记进名册`, '目标生成器');
+};
+
+const handOver = () => {
+  if (handRosterToNarrator(roster.value)) {
+    toastr.success('名册已放进输入框，按你的意思发出去', '目标生成器');
+    return;
+  }
+  toastr.warning('名册还空着', '目标生成器');
 };
 
 const openEmpress = () => {
@@ -197,6 +235,14 @@ const openEmpress = () => {
   white-space: nowrap;
 }
 
+.qy-roster-badge {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--c-seal);
+  border: 1px solid var(--c-primary-soft);
+  padding: 0 5px;
+}
+
 .qy-flip {
   flex: 0 0 auto;
   font-size: 11px;
@@ -289,7 +335,8 @@ const openEmpress = () => {
     font-size: 10.5px;
   }
 
-  .qy-flip {
+  .qy-flip,
+  .qy-title {
     display: none;
   }
 }

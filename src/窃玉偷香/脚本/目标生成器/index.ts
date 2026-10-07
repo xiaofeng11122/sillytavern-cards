@@ -1,6 +1,5 @@
 import { createScriptIdDiv, teleportStyle } from '@util/script';
 import App from './App.vue';
-import { useUiStore } from './store';
 
 /**
  * 目标生成器 · 酒馆助手脚本
@@ -100,16 +99,8 @@ $(() => {
   ensureMounted();
   startGuard();
 
-  // 酒馆助手原生按钮：即使注入失败也还能从这里开合面板
-  appendInexistentScriptButtons([{ name: '目标生成器', visible: true }]);
-  eventOn(getButtonEvent('目标生成器'), () => {
-    if (!pinia) {
-      ensureMounted();
-      return;
-    }
-    const ui = useUiStore(pinia);
-    ui.toggleExpanded();
-  });
+  // 不再注册酒馆助手原生按钮：它会渲染在输入栏一带，与注入的签筒条重名重复，
+  // 开合面板只由签筒条自己负责（已与用户确认）。
 
   $(window).on('pagehide', () => {
     if (retry_timer !== null) {
