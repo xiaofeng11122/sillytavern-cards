@@ -108,11 +108,15 @@ function watch_tavern_helper(compiler: webpack.Compiler) {
 
 let watcher: FSWatcher;
 const dump = () => {
+<<<<<<< HEAD
   // 本地改动(沙箱环境不允许子进程管道 stdio, `exec('pnpm dump')` 会 spawn EPERM):
   // 改为进程内直接执行同一份 dump 逻辑, 行为与 `pnpm dump` 等价.
   import('./dump_schema.ts').catch(error => {
     console.error(`\x1b[31m[schema_dump]\x1b[0m dump 失败: ${error}`);
   });
+=======
+  exec('pnpm dump', { cwd: import.meta.dirname });
+>>>>>>> 5cbce61438c014a1b01c610cf547c63c2cb8fee1
   console.info('\x1b[36m[schema_dump]\x1b[0m 已将所有 schema.ts 转换为 schema.json');
 };
 const dump_debounced = _.debounce(dump, 500, { leading: true, trailing: false });
@@ -134,9 +138,14 @@ function schema_dump(compiler: webpack.Compiler) {
 
 let child_process: ChildProcess;
 const bundle = () => {
+<<<<<<< HEAD
   // 本地改动(沙箱环境不允许子进程管道 stdio, `exec('pnpm sync bundle all')` 会 spawn EPERM):
   // 跳过 tavern_sync. 角色卡的正式打包走 tavern_forge, 与此处的开发期配套无关.
   console.info('\x1b[36m[tavern_sync]\x1b[0m 已跳过 (本地环境禁用子进程; 打包请用 tavern_forge)');
+=======
+  exec('pnpm sync bundle all', { cwd: import.meta.dirname });
+  console.info('\x1b[36m[tavern_sync]\x1b[0m 已打包所有配置了的角色卡/世界书/预设');
+>>>>>>> 5cbce61438c014a1b01c610cf547c63c2cb8fee1
 };
 const bundle_debounced = _.debounce(bundle, 500, { leading: true, trailing: false });
 function tavern_sync(compiler: webpack.Compiler) {
@@ -490,15 +499,23 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
     optimization: {
       minimize: true,
       minimizer: [
+<<<<<<< HEAD
         // 本地改动: parallel: false —— 沙箱环境不允许 jest-worker 的子进程管道 stdio
         argv.mode === 'production'
           ? new TerserPlugin({
               parallel: false,
+=======
+        argv.mode === 'production'
+          ? new TerserPlugin({
+>>>>>>> 5cbce61438c014a1b01c610cf547c63c2cb8fee1
               terserOptions: { format: { quote_style: 1 }, mangle: { reserved: ['_', 'toastr', 'YAML', '$', 'z'] } },
             })
           : new TerserPlugin({
               extractComments: false,
+<<<<<<< HEAD
               parallel: false,
+=======
+>>>>>>> 5cbce61438c014a1b01c610cf547c63c2cb8fee1
               terserOptions: {
                 format: { beautify: true, indent_level: 2 },
                 compress: false,
