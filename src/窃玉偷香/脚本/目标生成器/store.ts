@@ -128,6 +128,7 @@ export function adoptTarget(target: DrawnTarget): void {
       敏感点: target.敏感点,
       性经历: target.性经历,
       沦陷值: 0,
+      心理: '', // 她此刻的念头：换人后清空，等 AI 第一轮写
       信物: '',
       关系阶段: '陌生',
     });

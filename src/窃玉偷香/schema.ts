@@ -26,6 +26,7 @@ export const Schema = z.object({
     敏感点: z.string().prefault(''),
     性经历: z.string().prefault(''), // 与身份年龄现实匹配，驱动寝取情态
     沦陷值: z.coerce.number().prefault(0).transform(v => _.clamp(Number.isFinite(v) ? v : 0, 0, 100)), // 驱动日常态度分档；不设性行为门槛
+    心理: z.string().prefault(''), // 她此刻的念头（第一人称一句，每轮更新）；状态栏「心理」行显示
     信物: z.string().prefault(''), // '' 未赠；得手后可记小物名
     关系阶段: z.enum(['陌生', '相识', '熟络', '暧昧', '沦陷', '得手', '情人']).prefault('陌生'),
   }).prefault({}),

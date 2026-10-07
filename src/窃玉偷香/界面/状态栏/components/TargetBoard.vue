@@ -2,7 +2,7 @@
   <section class="board">
     <header class="head">
       <span class="fallen">
-        <b>{{ Math.round(target.沦陷值) }}</b>
+        <b>{{ Math.round(target.沦陷值) }}%</b>
         <i>{{ tier }}</i>
       </span>
       <span class="who">
@@ -14,6 +14,7 @@
       <span class="palace">宫线 {{ Math.min(palace, 2) }}/2</span>
     </header>
 
+    <FieldRow label="心理" :value="mind" kai />
     <FieldRow label="性格" :value="characterParts" />
     <FieldRow label="敏感" :value="target.敏感点 || '—'" accent />
     <FieldRow label="性癖" :value="target.性癖 || '—'" accent />
@@ -38,6 +39,9 @@ const tier = computed(() => {
 
 /** 性格写成「外·…｜内·…」，拆成两行读着清楚 */
 const characterParts = computed(() => (props.target.性格 || '—').split('｜'));
+
+/** 她此刻的念头：变量为空（AI 还没写过）时给一个占位，别让这一行空着 */
+const mind = computed(() => (props.target.心理 ? `「${props.target.心理}」` : '—'));
 </script>
 
 <style lang="scss" scoped>

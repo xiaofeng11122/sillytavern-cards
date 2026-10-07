@@ -67,6 +67,10 @@
           "default": 0,
           "type": "number"
         },
+        "心理": {
+          "default": "",
+          "type": "string"
+        },
         "信物": {
           "default": "",
           "type": "string"

@@ -2,7 +2,9 @@
   <div class="row">
     <span class="label">{{ label }}</span>
     <div class="value">
-      <p v-for="part in parts" :key="part" class="part" :class="{ 'is-accent': accent }">{{ part }}</p>
+      <p v-for="part in parts" :key="part" class="part" :class="{ 'is-accent': accent, 'is-kai': kai }">
+        {{ part }}
+      </p>
     </div>
   </div>
 </template>
@@ -14,8 +16,10 @@ const props = withDefaults(
     /** 传数组则逐行显示（性格的「外·…｜内·…」就是这样拆开的） */
     value: string | string[];
     accent?: boolean;
+    /** 楷体：用于「心理」这类她的心声，与陈述性字段区分开 */
+    kai?: boolean;
   }>(),
-  { accent: false },
+  { accent: false, kai: false },
 );
 
 const parts = computed(() => (Array.isArray(props.value) ? props.value : [props.value]).filter(Boolean));
@@ -51,5 +55,11 @@ const parts = computed(() => (Array.isArray(props.value) ? props.value : [props.
 
 .part.is-accent {
   color: var(--c-accent);
+}
+
+.part.is-kai {
+  font-family: var(--font-accent);
+  font-size: 12.5px;
+  color: var(--c-primary);
 }
 </style>
