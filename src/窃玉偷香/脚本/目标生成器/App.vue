@@ -49,10 +49,12 @@ import PoolChips from './components/PoolChips.vue';
 import RosterPanel from './components/RosterPanel.vue';
 import TargetSlip from './components/TargetSlip.vue';
 import { AGE_BANDS, drawTarget } from './data';
+import { buildOpeningText } from './narrative';
 import {
   adoptTarget,
   archiveCurrentTarget,
   handRosterToNarrator,
+  putTextIntoInput,
   startEmpressLine,
   takenNames,
   useRoster,
@@ -110,16 +112,25 @@ const adopt = () => {
   if (!ui.slip) {
     return;
   }
+  const target = ui.slip;
   const archived = archiveCurrentTarget(statData.value);
-  const name = ui.slip.姓名;
-  adoptTarget(ui.slip);
+  adoptTarget(target);
+
+  // 关键一步：把「我是怎么知道她的 + 我打算怎么进她家」写成一段话落进输入栏，
+  // 玩家过目／改完再发给说书人——私密字段一律不进这段话（见 narrative.ts）
+  const put_ok = putTextIntoInput(buildOpeningText(target));
+
   ui.slip = null;
+  ui.expanded = false; // 收起面板，让开输入栏
   reload();
   reloadRoster();
-  toastr.success(
-    archived ? `已把 ${archived} 记进名册，${name} 立为新目标` : `已立 ${name} 为目标，伪装身份归零`,
-    '目标生成器',
-  );
+
+  const head = archived ? `已把 ${archived} 记进名册，${target.姓名} 立为新目标` : `已立 ${target.姓名} 为目标`;
+  if (put_ok) {
+    toastr.success(`${head}；话已放进输入栏，看过再发`, '目标生成器');
+  } else {
+    toastr.warning(`${head}；但没找到输入栏，话没能自动填入`, '目标生成器');
+  }
 };
 
 const archiveCurrent = () => {

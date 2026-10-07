@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { POOLS, type DrawnTarget, type Pool } from './data';
+import { coverTitle } from './narrative';
 
 /** 脚本 iframe 不在消息楼层的变量作用域链上，必须显式指定楼层（详见 tavern-helper-runtime.md） */
 const MESSAGE_OPTION = { type: 'message', message_id: 'latest' } as const;
@@ -109,10 +110,11 @@ export function takenNames(statData: Record<string, any>, roster: Roster): Set<s
 }
 
 /**
- * 采用一位目标：写入信息卡，并清空攻略进度与伪装身份。
+ * 采用一位目标：写入信息卡，并记下这次要顶的混入身份。
  *
- * 只动这三处路径，其余变量（危险度、宫线进度…）保持不变；
+ * 只动这两处路径，其余变量（危险度、宫线进度…）保持不变；
  * 沦陷值/信物/关系阶段归零，是因为「这个人」的攻略才刚开始。
+ * 伪装身份在这里就写，是因为玩家在生成的那段话里已经把名目报出去了。
  */
 export function adoptTarget(target: DrawnTarget): void {
   updateVariablesWith(variables => {
@@ -129,8 +131,7 @@ export function adoptTarget(target: DrawnTarget): void {
       信物: '',
       关系阶段: '陌生',
     });
-    // 换了人，先前那套入户身份不再成立
-    _.set(variables, 'stat_data.主角.当前伪装身份', '');
+    _.set(variables, 'stat_data.主角.当前伪装身份', coverTitle(target));
     return variables;
   }, MESSAGE_OPTION);
 }
@@ -143,7 +144,22 @@ export function startEmpressLine(): void {
   }, MESSAGE_OPTION);
 }
 
-/** 把名册压成一行塞进输入框（不发送）：只在玩家主动需要时花一次 token */
+/**
+ * 把一段话放进酒馆输入栏（不发送）。
+ *
+ * 这是本脚本把「界面操作」交回给玩家的唯一出口：选完目标、或想把名册递给说书人时，
+ * 文本落进输入栏，玩家可以改，也可以不发。
+ */
+export function putTextIntoInput(text: string): boolean {
+  const $input = $('#send_textarea');
+  if (!$input.length) {
+    return false;
+  }
+  $input.val(text).trigger('input');
+  return true;
+}
+
+/** 把名册压成一行塞进输入框：只在玩家主动需要时花一次 token */
 export function handRosterToNarrator(roster: Roster): boolean {
   const names = Object.keys(roster);
   if (!names.length) {
@@ -156,14 +172,7 @@ export function handRosterToNarrator(roster: Roster): boolean {
       return `${name}(${entry.圈层}·${entry.关系状态}·${entry.沦陷值}·${token})`;
     })
     .join('，');
-  const line = `（名册：${text}）`;
-
-  const $input = $('#send_textarea');
-  if (!$input.length) {
-    return false;
-  }
-  $input.val(line).trigger('input');
-  return true;
+  return putTextIntoInput(`（名册：${text}）`);
 }
 
 /**
@@ -171,7 +180,8 @@ export function handRosterToNarrator(roster: Roster): boolean {
  * 这些都不是剧情数据，不进 MVU，只存 localStorage。
  */
 export const useUiStore = defineStore('目标生成器', () => {
-  const expanded = useLocalStorage('窃玉偷香:生成器-展开', false);
+  // 默认展开：开场不再铺叙，玩家一进来就该看见签筒（"直接输出目标生成器"）
+  const expanded = useLocalStorage('窃玉偷香:生成器-展开', true);
   const pools = useLocalStorage<Pool[]>('窃玉偷香:生成器-身份池', [...POOLS]);
   const ageIndex = useLocalStorage('窃玉偷香:生成器-年龄段', 0);
   const rosterOpen = useLocalStorage('窃玉偷香:生成器-名册展开', false);

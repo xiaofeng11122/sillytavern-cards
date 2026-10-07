@@ -36,8 +36,15 @@
       现下的 {{ replacing }} 已到手，收下此签会先把她记进名册。
     </p>
 
+    <div class="qy-slip-send">
+      <button type="button" class="qy-link" @click="showText = !showText">
+        {{ showText ? '收起这段话' : '看看要放进输入栏的话' }}
+      </button>
+      <pre v-if="showText" class="qy-slip-text">{{ openingText }}</pre>
+    </div>
+
     <footer class="qy-slip-actions">
-      <button type="button" class="qy-btn qy-btn-primary" @click="emit('adopt')">收下此签</button>
+      <button type="button" class="qy-btn qy-btn-primary" @click="emit('adopt')">收下此签，写话给我</button>
       <button type="button" class="qy-btn" @click="emit('redraw')">另掷一支</button>
     </footer>
   </article>
@@ -45,6 +52,7 @@
 
 <script setup lang="ts">
 import type { DrawnTarget } from '../data';
+import { buildOpeningText } from '../narrative';
 
 const props = defineProps<{
   slip: DrawnTarget;
@@ -55,8 +63,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{ adopt: []; redraw: [] }>();
 
+const showText = ref(false);
+
 /** 性格写成「外·…｜内·…」，展示时拆开更清楚 */
 const characterParts = computed(() => props.slip.性格.split('｜'));
+
+/** 收下此签后会落进输入栏的那段话（只含玩家该知道的信息） */
+const openingText = computed(() => buildOpeningText(props.slip));
 </script>
 
 <style lang="scss" scoped>
@@ -177,6 +190,37 @@ const characterParts = computed(() => props.slip.性格.split('｜'));
 .qy-slip-actions {
   display: flex;
   gap: 6px;
+}
+
+.qy-slip-send {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.qy-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--c-primary-soft);
+  border-bottom: 1px dashed var(--c-primary-soft);
+  cursor: pointer;
+}
+
+.qy-slip-text {
+  margin: 0;
+  padding: 7px 9px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px dashed var(--c-border);
 }
 
 .qy-btn {
