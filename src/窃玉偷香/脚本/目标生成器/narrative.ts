@@ -21,6 +21,18 @@ export function coverTitle(target: DrawnTarget): string {
   return target.混入身份.split('（')[0].trim();
 }
 
+/**
+ * 地点前缀：身份里已经带着坊名／字号时不再重复地点。
+ * 否则会拼出「城西宣仁坊的宣仁坊绣娘」「城南安远坊的安远镖局镖师之妻」这种话。
+ */
+function placePrefix(ward: string, identity: string): string {
+  const core = ward.replace(/^城[东南西北]+/, '').replace(/一带|附近|之内|的/g, '');
+  // 身份自带坊名（宣仁坊绣娘）、或身份本身就以地点起头（城南浣衣妇）时，不再重复地点
+  const ward_in_identity = core !== '' && identity.includes(core.slice(0, 2));
+  const identity_leads = identity.startsWith(ward) || (core !== '' && identity.startsWith(core));
+  return ward_in_identity || identity_leads ? '' : `${ward}的`;
+}
+
 /** 拼出发给说书人的那一段话（不含任何私密字段） */
 export function buildOpeningText(target: DrawnTarget): string {
   const lines: string[] = [];
@@ -30,7 +42,7 @@ export function buildOpeningText(target: DrawnTarget): string {
 
   lines.push(`我是怎么听到她的：${target.情报来源}。`);
 
-  const known: string[] = [`${target.住处}的${target.身份}`, `${target.年龄}岁上下`];
+  const known: string[] = [`${placePrefix(target.住处, target.身份)}${target.身份}`, `${target.年龄}岁上下`];
   if (target.婚配) {
     known.push(target.婚配);
   }
