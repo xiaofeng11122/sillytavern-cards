@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ── 语义配色：当代都市 · 干净专业的推拿工作室 ── */
+  --c-surface: #f4f6f5; /* 麻布底色：洁净、克制 */
+  --c-surface-raised: #ffffff; /* 卡面 */
+  --c-primary: #35606a; /* 松青：主强调，取自店名「松间」 */
+  --c-primary-soft: #8fadb3; /* 淡松：次要文字 */
+  --c-affection: #b0645f; /* 干玫瑰：好感度 */
+  --c-desire: #b8823c; /* 暖琥珀：性欲 */
+  --c-body: #5c7f7a; /* 苔绿：身体状态 */
+  --c-danger: #a8402f; /* 撞见与风声 */
+  --c-text: #23302f; /* 墨绿近黑 */
+  --c-text-muted: #7c8a88; /* 灰绿 */
+  --c-border: #d5dddb; /* 卡边 */
+
+  --font-body: 'PingFang SC', 'Hiragino Sans GB', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  --font-accent: 'Kaiti SC', 'STKaiti', 'KaiTi', 'Songti SC', serif;
+
+  --ease-gentle: cubic-bezier(0.33, 0.9, 0.35, 1);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--c-text);
+  background: transparent;
+}
