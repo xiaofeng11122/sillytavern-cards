@@ -8,7 +8,7 @@
       <span class="who">
         {{ target.姓名 }}
         <em v-if="target.身份">· {{ target.身份 }}</em>
-        <em v-if="target.身材">· {{ target.身材 }}</em>
+        <em v-if="shape">· {{ shape }}</em>
         <em v-if="target.年龄">· {{ target.年龄 }}岁</em>
       </span>
       <span class="palace">宫线 {{ Math.min(palace, 2) }}/2</span>
@@ -39,6 +39,9 @@ const tier = computed(() => {
 
 /** 性格写成「外·…｜内·…」，拆成两行读着清楚 */
 const characterParts = computed(() => (props.target.性格 || '—').split('｜'));
+
+/** 形貌是粗标签（如「丰腴｜掌心薄茧」），标题行里用空格替掉分隔符更顺眼 */
+const shape = computed(() => (props.target.形貌 ?? '').replace(/｜/g, ' '));
 
 /** 她此刻的念头：变量为空（AI 还没写过）时给一个占位，别让这一行空着 */
 const mind = computed(() => (props.target.心理 ? `「${props.target.心理}」` : '—'));

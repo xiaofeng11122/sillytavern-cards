@@ -3,7 +3,7 @@
     <header class="qy-slip-head">
       <span class="qy-slip-seal">{{ slip.圈层 }}</span>
       <span class="qy-slip-name">{{ slip.姓名 }}</span>
-      <span class="qy-slip-meta">{{ slip.身份 }} · {{ slip.身材 }} · {{ slip.年龄 }}岁</span>
+      <span class="qy-slip-meta">{{ slip.身份 }} · {{ slip.形貌 }} · {{ slip.年龄 }}岁</span>
     </header>
 
     <dl class="qy-slip-detail">
@@ -14,6 +14,10 @@
             <span v-if="index" class="qy-part-sep">｜</span>{{ part }}
           </span>
         </dd>
+      </div>
+      <div>
+        <dt>形貌</dt>
+        <dd>{{ slip.形貌 }}</dd>
       </div>
       <div>
         <dt>敏感点</dt>
@@ -28,6 +32,8 @@
         <dd>{{ slip.性经历 }}</dd>
       </div>
     </dl>
+
+    <p class="qy-slip-seed">以上只写「底子」：给个方向，细处交给演绎当场长出来。</p>
 
     <p class="qy-slip-notes">
       <span class="qy-note-label">苦主</span>{{ slip.苦主 }}
@@ -171,6 +177,15 @@ const openingText = computed(() => buildOpeningText(props.slip));
   line-height: 1.55;
   color: var(--c-text-muted);
   overflow-wrap: anywhere;
+}
+
+/* 「只写底子」的说明：与字段同区，但语气要弱 */
+.qy-slip-seed {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--c-primary-soft);
+  border-left: 2px solid var(--c-primary-soft);
+  padding-left: 7px;
 }
 
 .qy-note-label {

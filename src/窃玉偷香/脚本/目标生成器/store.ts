@@ -16,7 +16,8 @@ export interface RosterEntry {
   身份: string;
   圈层: Pool;
   年龄: number;
-  身材: string;
+  /** 形貌粗标签（旧名「身材」） */
+  形貌: string;
   信物: string;
   关系状态: '情人' | '了结';
   沦陷值: number;
@@ -75,7 +76,7 @@ export function archiveCurrentTarget(statData: Record<string, any>): string | nu
     身份: String(_.get(statData, '当前目标.身份', '') ?? ''),
     圈层: (_.get(statData, '当前目标.身份圈层', '') || inferLayer(String(_.get(statData, '当前目标.身份', '')))) as Pool,
     年龄: Number(_.get(statData, '当前目标.年龄', 0) ?? 0),
-    身材: String(_.get(statData, '当前目标.身材', '') ?? ''),
+    形貌: String(_.get(statData, '当前目标.形貌', '') || _.get(statData, '当前目标.身材', '') || ''), // 兜底读旧存档的「身材」
     信物: String(_.get(statData, '当前目标.信物', '') ?? ''),
     关系状态: '情人',
     沦陷值: Number(_.get(statData, '当前目标.沦陷值', 0) ?? 0),
@@ -123,7 +124,7 @@ export function adoptTarget(target: DrawnTarget): void {
       年龄: target.年龄,
       身份: target.身份,
       性格: target.性格,
-      身材: target.身材,
+      形貌: target.形貌,
       性癖: target.性癖,
       敏感点: target.敏感点,
       性经历: target.性经历,

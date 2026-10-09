@@ -6,11 +6,11 @@ import type { DrawnTarget } from './data';
  * 隐私边界（用户明确要求，不可越界）：
  *   ✅ 可以出现：姓名、年龄、身份、住处、婚配、情报来源、混入身份、踩点，
  *      以及性格的**外面那一层**（坊间看得见的印象）
- *   ❌ 不许出现：内在性格、身材、性癖、敏感点、性经历
+ *   ❌ 不许出现：内在性格、形貌、性癖、敏感点、性经历
  *      ——这些是私密信息，玩家不该凭空知道；它们只写进 MVU 变量，供 AI 演绎。
  */
 
-/** 性格字段是「外·…｜内·…」，只取外面那层 */
+/** 性格字段是「外·…｜内·…」，只取外面那层（坊间看得见的印象） */
 export function outerCharacter(target: DrawnTarget): string {
   const [outer] = target.性格.split('｜');
   return outer.replace(/^外·/, '').trim();

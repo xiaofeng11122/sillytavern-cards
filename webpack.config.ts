@@ -110,6 +110,10 @@ let watcher: FSWatcher;
 const dump = () => {
   // 本地改动(沙箱环境不允许子进程管道 stdio, `exec('pnpm dump')` 会 spawn EPERM):
   // 改为进程内直接执行同一份 dump 逻辑, 行为与 `pnpm dump` 等价.
+  // 另: 本地构建若设了 SKIP_SCHEMA_DUMP=1 就整段跳过——webpack 会在这里卡住时便于二分定位.
+  if (process.env.SKIP_SCHEMA_DUMP === '1') {
+    return;
+  }
   import('./dump_schema.ts').catch(error => {
     console.error(`\x1b[31m[schema_dump]\x1b[0m dump 失败: ${error}`);
   });
@@ -187,13 +191,29 @@ function tavern_sync(compiler: webpack.Compiler) {
   });
 }
 
+/**
+ * 入口名：`<src|示例>/A/B` → `A/B`，用来在做 `--config-name` 过滤时指认单个入口。
+ * 单独构建某一个界面/脚本时用得上，例如只构建窃玉偷香的两个产物：
+ *   webpack --mode production --config-name 窃玉偷香/脚本/目标生成器
+ * 注意必须写成**对象字面量的静态属性**：若把整个配置包在函数里返回，
+ * webpack-cli 取 `config.name` 时拿到的是空值，`--config-name` 就过滤不出任何东西。
+ */
+function entry_name(script: string) {
+  const dir = path.parse(script).dir;
+  return path.relative(import.meta.dirname, dir).split(/[\\/]/).slice(1).join('/') || path.parse(script).name;
+}
+
 function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Configuration {
   const should_obfuscate = fs
     .readFileSync(path.join(import.meta.dirname, entry.script), 'utf-8')
     .includes('@obfuscate');
   const script_filepath = path.parse(entry.script);
+  const name = entry_name(entry.script);
 
   return (_env, argv) => ({
+    // 本地改动: 给每个入口起名，便于只构建关心的那一个（见 entry_name 的注释）。
+    // 原来这里是 `path.relative(...)` 的内联写法，抽出函数只是为了让它能同时给 module 级的 name 用。
+    name,
     experiments: {
       outputModule: true,
     },
@@ -585,4 +605,9 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
   });
 }
 
-export default config.entries.map(parse_configuration);
+// 本地改动: 导出「静态 name + 工厂函数」的包，而不是直接导出工厂函数的数组。
+// 导出工厂数组时 webpack-cli 取不到 name，`--config-name` 无法用来只构建单个入口。
+export default config.entries.map(entry => ({
+  name: entry_name(entry.script),
+  config: parse_configuration(entry),
+}));
