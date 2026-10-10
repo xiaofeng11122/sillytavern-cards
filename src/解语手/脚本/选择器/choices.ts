@@ -82,15 +82,54 @@ export function deltaText(value: number): string {
   return value > 0 ? `+${value}` : `${value}`;
 }
 
-/**
- * 把选项放进输入栏（不发送），玩家可以在后面补充自己想加的内容再发。
- * 返回是否找到了输入栏。
- */
-export function putChoiceIntoInput(choice: Choice): boolean {
-  const $input = $('#send_textarea');
+/** 已选选项之间的分隔：两个换行，玩家自己补的话接在后面就是独立一段 */
+const JOINER = '\n\n';
+
+const INPUT_SELECTOR = '#send_textarea';
+
+/** 读当前输入栏内容；找不到输入栏时返回 null */
+function readInput(): string | null {
+  const $input = $(INPUT_SELECTOR);
   if (!$input.length) {
+    return null;
+  }
+  return String($input.val() ?? '');
+}
+
+/**
+ * 把「已选中的选项」同步进输入栏（不发送）。
+ *
+ * 做法：先看输入栏里已经包含哪些选项文本（用户在选项之间补写的话都保留），
+ * 再把这批选项按面板顺序拼起来，未选中的从输入栏里剔掉。
+ * 于是「点一条加入、再点一次移除」都能成立，而玩家自己补的文字不会被抹掉。
+ */
+export function syncChoicesToInput(choices: Choice[], selected: number[]): boolean {
+  const current = readInput();
+  if (current === null) {
     return false;
   }
-  $input.val(choice.text).trigger('input');
+
+  // 保留玩家补写的内容：输入栏里出现过、但本批选项都没匹配上的文字
+  let extra = current;
+  for (const choice of choices) {
+    const index = extra.indexOf(choice.text);
+    if (index >= 0) {
+      extra = extra.slice(0, index) + extra.slice(index + choice.text.length);
+    }
+  }
+  extra = extra.split(JOINER).join('\n').trim();
+
+  const picked = choices.filter(choice => selected.includes(choice.index)).map(choice => choice.text);
+  if (extra) {
+    picked.push(extra);
+  }
+
+  $(INPUT_SELECTOR).val(picked.join(JOINER)).trigger('input');
   return true;
+}
+
+/** 输入栏里此刻是否没有任何内容（用于「清空」按钮的可用状态） */
+export function inputIsEmpty(): boolean {
+  const current = readInput();
+  return current !== null && current.trim() === '';
 }
