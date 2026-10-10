@@ -1,10 +1,14 @@
 import { StoreDefinition } from 'pinia';
 
+<<<<<<< HEAD
 // 本地改动: 泛型约束由 `z.ZodObject` 放宽为 `z.ZodType`。
 // 原因: 本项目 schema.ts 顶层带 `.prefault({})`（防御空输入/部分输入），其类型是
 // `ZodPrefault<ZodObject>` 而非 `ZodObject`，原约束会让 `z.infer<T>` 退化并使 store.data 失去类型。
 // 放宽约束向后兼容（任何 ZodObject 仍是 ZodType），不改运行时行为。
 export function defineMvuDataStore<T extends z.ZodType>(
+=======
+export function defineMvuDataStore<T extends z.ZodObject>(
+>>>>>>> 6bdf7c9c487192089e80293da029e2345f543a90
   schema: T,
   variable_option: VariableOption,
   additional_setup?: (data: Ref<z.infer<T>>) => void,

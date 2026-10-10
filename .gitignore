@@ -11,9 +11,12 @@ pnpm-debug.log*
 
 auto-imports.d.ts
 components.d.ts
+<<<<<<< HEAD
 
 # 示例产物不入库（上游 fork 的 CI 也会删掉它们，避免每次推送来回拉锯）
 dist/角色卡示例/
 dist/脚本示例/
 dist/前端界面示例/
 dist/流式楼层界面示例/
+=======
+>>>>>>> 6bdf7c9c487192089e80293da029e2345f543a90
