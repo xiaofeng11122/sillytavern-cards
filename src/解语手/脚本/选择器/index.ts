@@ -149,9 +149,12 @@ function rawChoicesOf(panel: HTMLElement): RawChoice[] {
   return parseChoices(getChatMessages(mesId)[0]?.message ?? '');
 }
 
-/** 面板外壳里内嵌的 AI 原文（正则 $2 带进来的） */
+/** 面板外壳里内嵌的 AI 原文（正则 $1 带进来的） */
 function embeddedRaw(panel: HTMLElement): string {
-  return $(panel).find('template[data-jy-source]').text() ?? '';
+  // 用 <script type="text/plain"> 承载原文，而不是 <template>：
+  // template 的内容不在 DOM 里（浏览器把它放进独立的 DocumentFragment），
+  // jQuery 的 .text() 读不出来，会导致面板永远渲染不出选项。
+  return $(panel).find('script[data-jy-source]').text() ?? '';
 }
 
 /** 建一条选项按钮 */
