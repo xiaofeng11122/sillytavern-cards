@@ -2,19 +2,20 @@
  * 对话选择器 · 解析与展示逻辑。
  *
  * 数据来源：AI 每轮按「选择器」条目的契约，在正文末尾输出若干 <ChoiceN> 块。
- * 这些块由正则「对AI隐藏选项块」从发给 AI 的上下文里剔除（避免它照着历史选项写），
- * 但 **楼层原文里仍在**，所以这里直接读楼层原文解析。
+ * 这些块由正则「对AI隐藏选项块」**从楼层显示与提示词两边都剔除**，
+ * 脚本读的是楼层原文（getChatMessages 拿到的 message 不被正则改写），所以仍能解析。
  *
- * 契约格式（三行一个选项）：
+ * 契约格式（两行一个选项）：
  *   <Choice1>
  *   问一句「那个项目是不是最近在赶节点」
  *   好感+6 性欲+0
- *   心理：他怎么会知道我们组在赶这个
  *   </Choice1>
+ *
+ * 兼容旧写法：块内若多出第三行（早期版本的心理预告），解析时忽略、不展示。
  */
 
 const CHOICE_BLOCK = /<Choice(\d+)>([\s\S]*?)<\/Choice\1>/gi;
-const DELTA = /好感\s*([+-]\d+)\s*性欲\s*([+-]\d+)/;
+const DELTA = /好感\s*([+-]?\d+)\s*性欲\s*([+-]?\d+)/;
 
 export interface Choice {
   index: number;
@@ -24,8 +25,6 @@ export interface Choice {
   affection: number;
   /** 性欲增减（预测值） */
   desire: number;
-  /** 心理预告：她心里会冒出来的那一念 */
-  mind: string;
 }
 
 /** 解析一段文本里的全部选项块，按出现顺序返回 */
@@ -46,25 +45,21 @@ export function parseChoices(message: string): Choice[] {
       continue;
     }
 
+    // 第一行是选项本身；增减行在其后任意一行（旧格式的第三行心理已弃用，忽略）
     const text = body[0];
     let affection = 0;
     let desire = 0;
-    let mind = '';
 
     for (const line of body.slice(1)) {
       const delta = line.match(DELTA);
       if (delta) {
         affection = Number(delta[1]);
         desire = Number(delta[2]);
-        continue;
-      }
-      const mindLine = line.replace(/^心理[:：]\s*/, '');
-      if (mindLine !== line) {
-        mind = mindLine;
+        break;
       }
     }
 
-    choices.push({ index, text, affection, desire, mind });
+    choices.push({ index, text, affection, desire });
   }
 
   return choices;

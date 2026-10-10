@@ -12,7 +12,6 @@
           <em class="jx-aff">好感 {{ deltaText(choice.affection) }}</em>
           <em class="jx-des">性欲 {{ deltaText(choice.desire) }}</em>
         </span>
-        <span v-if="choice.mind" class="jx-mind">心理：{{ choice.mind }}</span>
       </button>
     </div>
   </div>
@@ -153,13 +152,6 @@ const pick = (choice: Choice) => {
 
 .jx-des {
   color: var(--j-desire);
-}
-
-.jx-mind {
-  font-family: var(--j-font);
-  font-size: 11px;
-  color: var(--j-primary-soft);
-  overflow-wrap: anywhere;
 }
 
 @media (max-width: 560px) {
