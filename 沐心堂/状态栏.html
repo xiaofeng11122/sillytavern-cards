@@ -55,8 +55,19 @@
   #reroll { background: #fff; color: #8a6a35; }
   #confirm { background: #8a6a35; color: #fff; }
   #confirm:disabled { opacity: .6; cursor: default; }
-  .tip { font-size: 11px; color: #a08c6a; margin-top: 8px; min-height: 14px; }
+  .tip { font-size: 11px; color: #a08c6a; margin-top: 8px; min-height: 14px; line-height: 1.6; }
   .empty { font-size: 12px; color: #a08c6a; padding: 14px 0; text-align: center; }
+
+  /* ---------- 她带的人（多人登场） ---------- */
+  .mates { margin-top: 6px; border: 1px dashed #c9beb0; border-radius: 6px; padding: 6px 8px; background: #fdfaf4; }
+  .mates .ttl { font-size: 11px; color: #999; margin-bottom: 5px; line-height: 1.5; }
+  .rel { display: inline-block; padding: 2px 9px; margin: 0 4px 4px 0; font-size: 11px; border: 1px solid #d8cfc4; border-radius: 10px; background: #fff; cursor: pointer; color: #6b5f52; }
+  .rel:hover { border-color: #b08d57; color: #8a6a35; }
+  .rel.on { border-color: #a35b5b; color: #a35b5b; background: #faf0f0; }
+  .rel.off { opacity: .45; cursor: not-allowed; }
+  .rel .why { display: block; font-size: 10px; color: #b08d57; }
+  .solo { margin-top: 8px; padding: 6px 0; font-size: 12px; text-align: center; border: 1px solid #a35b5b; border-radius: 6px; background: #fff; color: #a35b5b; cursor: pointer; }
+  .solo:hover { background: #faf0f0; }
 
   /* ---------- 人物记录 ---------- */
   .list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -93,7 +104,7 @@
   <!-- 生成器模式：开场白只显示这一块（一次只出现一位，左右切换） -->
   <div id="genMode" style="display:none">
     <div class="hd">沐心堂 · 选人</div>
-    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 三位看妥后确认入池</div>
+    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁）· 每位可单独入池，只覆盖那一个</div>
     <div id="genSel"></div>
   </div>
 
@@ -273,6 +284,34 @@
     '健身教练':   { age: [22, 34], bodies: ['精瘦薄肌骨肉匀称', '高挑修长腰细腿长', '身量适中温婉清秀'], outer: ['泼辣直接', '高冷疏离', '温婉得体'], inner: ['掌控欲强', '倔强要强', '野心勃勃'], kinks: ['轻度疼痛', '支配臣服', '连续高潮绝顶控制', '感官控制', '多人场面'] }
   };
 
+  // ---------- 她带的人：关系池（按女主年龄过滤合理性，可多选可单选） ----------
+  // gap 为关系人相对女主的年龄差区间（负数=比女主小）；minHost 为女主年龄下限
+  var RELATIVES = [
+    { key: '女儿', minHost: 38, gap: [-22, -18], why: '她需满38岁' },
+    { key: '母亲', minHost: 0,  gap: [15, 28],  why: '' },
+    { key: '姐妹', minHost: 0,  gap: [-8, 8],    why: '' },
+    { key: '岳母', minHost: 26, gap: [20, 32],   why: '她需满26岁' },
+    { key: '小姨', minHost: 0,  gap: [-12, 20],  why: '' }
+  ];
+  function relByKey(k) {
+    for (var i = 0; i < RELATIVES.length; i++) if (RELATIVES[i].key === k) return RELATIVES[i];
+    return null;
+  }
+  function relAge(hostAge, r) {
+    var gap = randInt(r.gap[0], r.gap[1]);
+    return Math.max(18, Math.min(60, hostAge + gap));
+  }
+  // 女主年龄变化后：丢弃变得不合理的关系，保留的关系按新年龄重算岁数
+  function remapMates(h) {
+    h.mates = (h.mates || []).filter(function (m) {
+      var r = relByKey(m.rel);
+      return r && h.age >= r.minHost;
+    }).map(function (m) {
+      var r = relByKey(m.rel);
+      return { rel: m.rel, age: relAge(h.age, r) };
+    });
+  }
+
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function pickW(arr) { return pick(weighted(arr)); }
   function pickN(arr, n) {
@@ -303,10 +342,11 @@
       appoint: Math.random() < 0.6 ? '到店' : '上门',
       time: '待定',
       party: '单人',
+      mates: [],
       existing: false
     };
   }
-  // 换身份时按新身份重roll全部关联字段（保留姓名与预约），保证组合有逻辑
+  // 换身份时按新身份重roll全部关联字段（保留姓名/预约/同伴关系，关系按新年龄重算），保证组合有逻辑
   function rerollByPortrait(h, identity, type) {
     var t = type || h.type;
     var p = PORTRAITS[identity] || PORTRAITS['圈内艺人'];
@@ -316,6 +356,7 @@
     h.outer = pickW(p.outer);
     h.inner = pickW(p.inner);
     h.kinks = pickNW(p.kinks, 1 + Math.floor(Math.random() * 3));
+    remapMates(h);
     return h;
   }
   function heroesFromHarem(harem) {
@@ -338,6 +379,7 @@
         appoint: h['预约类型'] || '到店',
         time: h['下次预约时间'] || '待定',
         party: h['登场人数'] || '单人',
+        mates: (h['同伴'] || []).map(function (m) { return { rel: m['关系'] || '', age: m['年龄'] || 0 }; }).filter(function (m) { return m.rel; }),
         existing: true
       };
     });
@@ -366,8 +408,26 @@
     }
     return html;
   }
+  // 多人登场：她带的人（关系按她的年龄过滤，可多选可只选一个）
+  function matesBlock(h, i) {
+    if (h.party !== '多人') return '';
+    var html = '<div class="mates"><div class="ttl">她带的人 · 关系按她的年龄过滤（' + h.age + '岁）：女儿须她满38岁、岳母须满26岁；可多选，也可只选一个</div>';
+    RELATIVES.forEach(function (r) {
+      var ok = h.age >= r.minHost;
+      var on = h.mates.some(function (m) { return m.rel === r.key; });
+      html += '<span class="rel ' + (on ? 'on' : (ok ? '' : 'off')) + '" data-act="rel" data-i="' + i + '" data-v="' + r.key + '">' + r.key +
+        (ok ? '' : '<span class="why">' + r.why + '</span>') + '</span>';
+    });
+    html += '<div class="row" style="margin-top:5px">' +
+      (h.mates.length
+        ? ('已选：' + h.mates.map(function (m) { return '<span class="chip">' + esc(m.rel) + ' · ' + m.age + '岁</span>'; }).join(''))
+        : '<span style="color:#a08c6a">还没选。不选就是她一个人来。</span>') +
+      '</div></div>';
+    return html;
+  }
   function selCard(h, i) {
     var timeLabel = h.time && h.time !== '待定' ? h.time : '待定 ✎';
+    var soloLabel = h.existing ? '更新入池 · 只改她一个（进度保留）' : '入池 · 只她一个';
     return '<div class="card">' +
       '<div class="nm">' + esc(h.name) + '<span class="age">' + esc(h.age) + ' 岁</span></div>' +
       '<div class="row"><b>身份</b> · <span class="dim" data-act="identity" data-i="' + i + '">' + esc(h.type + ' / ' + h.identity) + '</span>' + identityPicker(h, i) + '</div>' +
@@ -377,7 +437,9 @@
       '<div class="row kinks"><b>性癖</b> · <span class="dim" data-act="kink" data-i="' + i + '">换一组</span><br>' + kinkChips(h) + '</div>' +
       '<div class="row"><b>预约</b> · <span class="dim" data-act="appoint" data-i="' + i + '">' + esc(h.appoint) + '</span>' +
       ' · <span class="dim" data-act="appointTime" data-i="' + i + '">' + esc(timeLabel) + '</span>' +
-      ' · <span class="dim" data-act="party" data-i="' + i + '">' + esc(h.party) + '</span></div>' +
+      ' · <span class="dim" data-act="party" data-i="' + i + '">' + esc(h.party) + '</span>登场</div>' +
+      matesBlock(h, i) +
+      '<div class="solo" data-act="solo" data-i="' + i + '">' + soloLabel + '</div>' +
       '</div>';
   }
   function selRender() {
@@ -387,10 +449,14 @@
       sel.host.innerHTML = '<div class="empty">没有候选。</div>';
       return;
     }
-    var confirmLabel = (MODE === 'generator') ? '确认入池' : '更新入池（覆盖现有进度）';
     var n = sel.heroes.length;
     var dots = '';
     for (var d = 0; d < n; d++) dots += '<span class="dot' + (d === sel.idx ? ' on' : '') + '" data-act="goto" data-v="' + d + '"></span>';
+    var tipDefault = (MODE === 'generator')
+      ? ''
+      : '每位候选可单独入池，只覆盖那一个，其他人不动；三人约了同一时间会在入池前提醒你。';
+    var opsHtml = '<button id="reroll" type="button">' + (n > 1 ? '整组重抽' : '换一位') + '</button>';
+    if (MODE === 'generator') opsHtml += '<button id="confirm" type="button">确认入池（' + n + ' 人）</button>';
     sel.host.innerHTML =
       '<div class="carousel">' +
       '<button class="arrow" id="prevBtn" type="button"' + (n < 2 ? ' disabled' : '') + '>‹</button>' +
@@ -398,11 +464,8 @@
       '<button class="arrow" id="nextBtn" type="button"' + (n < 2 ? ' disabled' : '') + '>›</button>' +
       '</div>' +
       '<div class="dots">' + dots + '</div>' +
-      '<div class="ops">' +
-      '<button id="reroll" type="button">' + (n > 1 ? '整组重抽' : '换一位') + '</button>' +
-      '<button id="confirm" type="button">' + confirmLabel + '</button>' +
-      '</div>' +
-      '<div class="tip" id="tip"></div>';
+      '<div class="ops">' + opsHtml + '</div>' +
+      '<div class="tip" id="tip">' + tipDefault + '</div>';
     if (n > 1) {
       $('prevBtn').addEventListener('click', function () { sel.idx = (sel.idx - 1 + n) % n; sel.editingIdx = -1; selRender(); });
       $('nextBtn').addEventListener('click', function () { sel.idx = (sel.idx + 1) % n; sel.editingIdx = -1; selRender(); });
@@ -413,7 +476,8 @@
       sel.editingIdx = -1;
       selRender();
     });
-    $('confirm').addEventListener('click', onConfirm);
+    var cf = $('confirm');
+    if (cf) cf.addEventListener('click', onConfirm);
   }
   function bindSelContainer(el) {
     sel.host = el;
@@ -441,13 +505,28 @@
       if (act === 'inner') { var p3 = PORTRAITS[h.identity]; h.inner = pickW(p3.inner); selRender(); return; }
       if (act === 'kink') { var p4 = PORTRAITS[h.identity]; h.kinks = pickNW(p4.kinks, 1 + Math.floor(Math.random() * 3)); selRender(); return; }
       if (act === 'appoint') { h.appoint = h.appoint === '到店' ? '上门' : '到店'; selRender(); return; }
-      if (act === 'party') { h.party = h.party === '单人' ? '多人' : '单人'; selRender(); return; }
+      if (act === 'party') {
+        h.party = h.party === '单人' ? '多人' : '单人';
+        if (h.party === '单人') h.mates = [];
+        selRender(); return;
+      }
       if (act === 'appointTime') {
         var input = window.prompt('下次预约时间（取消或留空 = 待定）\n例：本周六晚 / 明晚九点 / 10月20日下午', h.time === '待定' ? '' : h.time);
         if (input === null) return;
         h.time = input.trim() ? input.trim() : '待定';
         selRender(); return;
       }
+      if (act === 'rel') {
+        var r = relByKey(el2.getAttribute('data-v'));
+        if (!r) return;
+        if (h.age < r.minHost) { tip('她还不满 ' + r.minHost + ' 岁，带「' + r.key + '」不合理'); return; }
+        var at = -1;
+        h.mates.forEach(function (m, k) { if (m.rel === r.key) at = k; });
+        if (at >= 0) h.mates.splice(at, 1);
+        else h.mates.push({ rel: r.key, age: relAge(h.age, r) });
+        selRender(); return;
+      }
+      if (act === 'solo') { onSoloConfirm(i); return; }
     });
     // 触摸滑动切换（滚轮式）
     var sx = 0, sy = 0, moved = false;
@@ -498,22 +577,30 @@
   }
   function tip(msg) { var t = $('tip'); if (t) t.textContent = msg; }
 
+  // ---------- 档案构造：整组 / 单人 ----------
+  function buildOne(h, existing) {
+    return {
+      '身份': h.type + '·' + h.identity,
+      '年龄': h.age,
+      '身材': h.body,
+      '外在性格': h.outer,
+      '内在性格': h.inner,
+      '性癖': h.kinks.slice(),
+      '预约类型': h.appoint,
+      '下次预约时间': h.time,
+      '登场人数': h.party,
+      '同伴': (h.party === '多人' && h.mates.length)
+        ? h.mates.map(function (m) { return { '关系': m.rel, '年龄': m.age }; })
+        : [],
+      // 单人更新保留她的进度；新入池从 5/5 起步
+      '好感度': (existing && typeof existing['好感度'] === 'number') ? existing['好感度'] : 5,
+      '性欲': (existing && typeof existing['性欲'] === 'number') ? existing['性欲'] : 5
+    };
+  }
   function buildHarem() {
     var harem = {};
     sel.heroes.forEach(function (h) {
-      harem[h.name] = {
-        '身份': h.type + '·' + h.identity,
-        '年龄': h.age,
-        '身材': h.body,
-        '外在性格': h.outer,
-        '内在性格': h.inner,
-        '性癖': h.kinks.slice(),
-        '预约类型': h.appoint,
-        '下次预约时间': h.time,
-        '登场人数': h.party,
-        '好感度': 5,
-        '性欲': 5
-      };
+      harem[h.name] = buildOne(h, harem[h.name]);
     });
     return harem;
   }
@@ -529,6 +616,27 @@
         return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
       });
     });
+  }
+  // 单人入池/更新：只写她一个，其他人的档案与进度原样保留
+  function writeOne(h, existing) {
+    return thCall('getCurrentMessageId', undefined).then(function (id) {
+      var opt = { type: 'message' };
+      if (id !== undefined && id !== null) opt.message_id = id;
+      return thCall('getVariables', opt).then(function (vars) {
+        var stat = pget(vars, 'stat_data', {}) || {};
+        var harem = pget(stat, '后宫', {}) || {};
+        harem[h.name] = buildOne(h, existing || harem[h.name]);
+        if (!pget(stat, '世界.当前女主', '')) pset(stat, '世界.当前女主', h.name);
+        if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
+        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+      });
+    });
+  }
+
+  // ---------- 预约撞车检测 ----------
+  // 撞车定义：预约类型相同、且都填了同一个具体时间（待定不算，交给 AI 顺延）
+  function timeClash(a, b) {
+    return !!a.time && a.time !== '待定' && a.time === b.time && a.appoint === b.appoint;
   }
 
   // ---------- 预填输入栏（官方 /setinput，换行写 {{newline}}） ----------
@@ -554,11 +662,27 @@
       tip('请手动复制上方内容');
     }
   }
+  function matesText(h) {
+    if (h.party !== '多人' || !h.mates.length) return '';
+    return '，偕同：' + h.mates.map(function (m) { return m.rel + '（' + m.age + '岁）'; }).join('、');
+  }
+  function matesTextRec(h) {
+    if (h['登场人数'] !== '多人' || !(h['同伴'] || []).length) return '';
+    return '，偕同：' + h['同伴'].map(function (m) { return m['关系'] + '（' + (m['年龄'] || '') + '岁）'; }).join('、');
+  }
+  function soloLines(h) {
+    return [
+      '【入池：' + h.name + '】',
+      h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
+        matesText(h) + '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）',
+      '（本段由状态栏自动填入，可修改补充；以你发送的内容为准）'
+    ];
+  }
   function rosterLines() {
     var lines = ['【花名册已更新】'];
     sel.heroes.forEach(function (h) {
       lines.push(h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
-        '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）');
+        matesText(h) + '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）');
     });
     lines.push('当前目标：' + sel.heroes[0].name);
     lines.push('（本段由状态栏自动填入，可修改补充；以你发送的内容为准）');
@@ -566,59 +690,95 @@
   }
   function targetLines(name, h, stat) {
     var kinks = h['性癖'] || [];
-    return [
+    var lines = [
       '【切换目标：' + name + '】',
       '身份：' + (h['身份'] || '') + '，' + (h['年龄'] || '') + '岁',
       '身材：' + (h['身材'] || ''),
       '性格：外 ' + (h['外在性格'] || '') + ' × 内 ' + (h['内在性格'] || ''),
       '已解锁性癖：' + (kinks.length ? kinks.join('、') : '尚未解锁'),
       '好感度 ' + (h['好感度'] || 0) + '（' + stageOf(h['好感度'] || 0) + '）· 性欲 ' + (h['性欲'] || 0),
-      '预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人'),
-      '当前：' + pget(stat, '世界.当前日期', '') + ' ' + pget(stat, '世界.当前时间段', '') + ' · ' + pget(stat, '世界.当前场景', ''),
-      '接下来以她为目标。',
-      '（本段由状态栏自动填入，可修改补充；以你发送的内容为准）'
+      '预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人')
     ];
+    if (matesTextRec(h)) lines.push('偕同：' + matesTextRec(h).replace(/^，/, ''));
+    lines.push('当前：' + pget(stat, '世界.当前日期', '') + ' ' + pget(stat, '世界.当前时间段', '') + ' · ' + pget(stat, '世界.当前场景', ''));
+    lines.push('接下来以她为目标。');
+    lines.push('（本段由状态栏自动填入，可修改补充；以你发送的内容为准）');
+    return lines;
   }
 
-  // ---------- 确认入池 ----------
+  // ---------- 单人入池 / 更新（只覆盖这一位） ----------
+  function onSoloConfirm(i) {
+    var h = sel.heroes[i];
+    if (!h) return;
+    readStat().then(function (stat) {
+      var harem = pget(stat, '后宫', {}) || {};
+      var others = [];
+      Object.keys(harem).forEach(function (n) {
+        if (n === h.name) return;
+        others.push({ name: n, appoint: harem[n]['预约类型'] || '到店', time: harem[n]['下次预约时间'] || '待定' });
+      });
+      sel.heroes.forEach(function (o, j) {
+        if (j === i || o.name === h.name) return;
+        others.push({ name: o.name, appoint: o.appoint, time: o.time });
+      });
+      var clash = [];
+      others.forEach(function (o) { if (timeClash(h, o)) clash.push(o.name); });
+      if (clash.length) {
+        if (!window.confirm('预约撞车：「' + h.name + '」与「' + clash.join('、') + '」约的都是「' + h.appoint + ' · ' + h.time + '」，两场会挤在同一时段。\n仍然入池吗？（可取消后点她的预约时间改期）')) return;
+      } else if (harem[h.name]) {
+        if (!window.confirm('更新「' + h.name + '」的档案：只改她一个，其他女主不动，她的好感度与性欲进度保留。确定吗？')) return;
+      }
+      var existed = !!harem[h.name];
+      writeOne(h, harem[h.name]).then(function () {
+        h.existing = true;
+        tip('已' + (existed ? '更新' : '入池') + '：' + h.name + '（' + (existed ? '进度保留' : '好感度/性欲 5/5 起步') + '，其他女主未动）');
+        if (MODE === 'generator') prefill(soloLines(h), '档案已写入并填入输入栏，可修改后发送，以你发送的为准');
+        selRender();
+        if (MODE === 'bar') { barRender(); recRender(); }
+      }).catch(function (err) {
+        tip('写入失败：' + (err && err.message ? err.message : err));
+      });
+    });
+  }
+
+  // ---------- 整组确认入池（仅开局生成器） ----------
   function onConfirm() {
     var btn = $('confirm');
     if (btn) { btn.disabled = true; btn.textContent = '写入中…'; }
     tip('');
-    if (MODE !== 'generator' && sel.heroes.some(function (h) { return h.existing; })) {
-      if (!window.confirm('重新入池会覆盖当前花名册与全部进度，确定继续？')) {
-        if (btn) { btn.disabled = false; btn.textContent = '更新入池（覆盖现有进度）'; }
-        return;
+    // 三人之间的预约撞车检测
+    var clash = [];
+    for (var a = 0; a < sel.heroes.length; a++) {
+      for (var b = a + 1; b < sel.heroes.length; b++) {
+        if (timeClash(sel.heroes[a], sel.heroes[b])) clash.push(sel.heroes[a].name + ' 与 ' + sel.heroes[b].name);
       }
+    }
+    if (clash.length && !window.confirm('预约撞车：' + clash.join('；') + ' 约的都是同一时段的同一类型。\n仍然按这个安排入池吗？（可取消后逐个改预约时间）')) {
+      if (btn) { btn.disabled = false; btn.textContent = '确认入池（' + sel.heroes.length + ' 人）'; }
+      return;
     }
     var harem = buildHarem();
     var firstName = sel.heroes.length ? sel.heroes[0].name : '';
-    var phase = (MODE === 'generator') ? '深耕' : null;
-    writeStat(harem, firstName, phase).then(function () {
-      if (MODE === 'generator') {
-        var desc = sel.heroes.map(function (h) {
-          return h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
-            '，' + h.appoint + '，' + h.time + '，' + h.party + '）';
-        }).join('；');
-        var msg = '今晚入池的三位：' + desc + '。从第一位开始。';
-        if (BRIDGE) {
-          framePost({ source: 'mxt-frame', type: 'gen', message: msg });
-          tip('已写入变量，正在开始第一夜…');
-          switchMode('bar');
-        } else if (createChatMessages) {
-          createChatMessages([{ role: 'user', message: msg }]).then(function () {
-            if (triggerSlash) triggerSlash('/trigger');
-          }).catch(function () { tip('已写入变量，请手动发送一句话让 AI 开始第一夜。'); });
-        } else {
-          tip('已写入变量。请手动发送一句话让 AI 开始第一夜。');
-        }
+    writeStat(harem, firstName, '深耕').then(function () {
+      var desc = sel.heroes.map(function (h) {
+        return h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
+          matesText(h) + '，' + h.appoint + '，' + h.time + '，' + h.party + '）';
+      }).join('；');
+      var msg = '今晚入池的三位：' + desc + '。从第一位开始。';
+      if (BRIDGE) {
+        framePost({ source: 'mxt-frame', type: 'gen', message: msg });
+        tip('已写入变量，正在开始第一夜…');
+        switchMode('bar');
+      } else if (createChatMessages) {
+        createChatMessages([{ role: 'user', message: msg }]).then(function () {
+          if (triggerSlash) triggerSlash('/trigger');
+        }).catch(function () { tip('已写入变量，请手动发送一句话让 AI 开始第一夜。'); });
       } else {
-        prefill(rosterLines(), '已更新花名册并填入输入栏，可修改后发送');
-        if (btn) { btn.disabled = false; btn.textContent = '更新入池（覆盖现有进度）'; }
+        tip('已写入变量。请手动发送一句话让 AI 开始第一夜。');
       }
     }).catch(function (err) {
       tip('写入失败：' + (err && err.message ? err.message : err));
-      if (btn) { btn.disabled = false; btn.textContent = (MODE === 'generator') ? '确认入池' : '更新入池（覆盖现有进度）'; }
+      if (btn) { btn.disabled = false; btn.textContent = '确认入池（' + sel.heroes.length + ' 人）'; }
     });
   }
 
@@ -675,6 +835,7 @@
       var aff = h['好感度'] || 0;
       var isOpen = !!rec.expanded[rec.current];
       var brief = esc((h['身份'] || '')) + ' · ' + esc(h['预约类型'] || '到店') + ' · 下次预约 ' + esc(h['下次预约时间'] || '待定');
+      var mates = h['同伴'] || [];
       html += '<div class="profile">' +
         '<div class="psum" data-act="toggle">' +
         '<span class="pname">' + esc(rec.current) + '</span>' +
@@ -687,6 +848,9 @@
         '<div class="row"><b>身材</b> · ' + esc(h['身材'] || '') + '</div>' +
         '<div class="row"><b>性格</b> · 外 ' + esc(h['外在性格'] || '') + ' × 内 ' + esc(h['内在性格'] || '') + '</div>' +
         '<div class="row"><b>预约类型</b> · ' + esc(h['预约类型'] || '到店') + '　<b>下次预约时间</b> · ' + esc(h['下次预约时间'] || '待定') + '　<b>登场</b> · ' + esc(h['登场人数'] || '单人') + '</div>' +
+        (mates.length
+          ? ('<div class="row"><b>她带的人</b> · ' + mates.map(function (m) { return esc(m['关系']) + '（' + esc(m['年龄']) + '岁）'; }).join('、') + '</div>')
+          : '') +
         '<div class="rbar"><div class="lab"><span>好感度</span><span>' + aff + ' / 100</span></div><div class="track"><div class="fill" style="width:' + Math.max(0, Math.min(100, aff)) + '%"></div></div></div>' +
         '<div class="rbar"><div class="lab"><span>性欲</span><span>' + (h['性欲'] || 0) + ' / 100</span></div><div class="track"><div class="fill lust" style="width:' + Math.max(0, Math.min(100, h['性欲'] || 0)) + '%"></div></div></div>' +
         '<div class="row kinks"><b>已解锁性癖</b></div><div>' +
