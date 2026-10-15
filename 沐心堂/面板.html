@@ -194,6 +194,20 @@
   .noteedit textarea:focus { border-color: var(--magenta); box-shadow: 0 0 10px rgba(255, 45, 120, .3); }
   .dim.note { border-bottom-color: rgba(255, 45, 120, .5); }
   .dim.note:hover { color: var(--magenta); border-bottom-color: var(--magenta); text-shadow: 0 0 8px rgba(255, 45, 120, .5); }
+  /* ---------- 我的档案（{{user}} 本人）：与女主档案区分开，走琥珀色 ---------- */
+  .selfbox { border: 1px solid rgba(255, 214, 10, .45); background: var(--panel); margin-bottom: 10px; }
+  .selfhd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 12px; cursor: pointer; user-select: none; }
+  .selfhd:hover { background: var(--panel2); }
+  .selfhd .pname { color: #ffe9a3; }
+  .selfhd .pexpand { color: var(--yellow); }
+  .selfbody { display: none; padding: 4px 12px 12px; border-top: 1px dashed rgba(255, 214, 10, .35); }
+  .selfbody.open { display: block; }
+  .selfnote { font-size: 11px; line-height: 1.7; color: #ffe9a3; background: rgba(255, 214, 10, .07); border-left: 2px solid var(--yellow); padding: 6px 9px; margin: 4px 0 2px; }
+  .selflab { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; margin: 8px 0 1px; }
+  .selfbody .tin { border-color: rgba(255, 214, 10, .45); }
+  .selfbody .tin:focus { border-color: var(--yellow); box-shadow: 0 0 10px rgba(255, 214, 10, .25); }
+  .selfops { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .selfops .opt { margin: 0; }
 </style>
 </head>
 <body>
@@ -209,7 +223,8 @@
   <!-- 模式二：人物记录器（档案）。与生成器互相独立，由「沐心堂 · 档案」按钮展开 -->
   <div id="recMode" style="display:none">
     <div class="hd">沐心堂 · 档案<span class="sys">ARCHIVE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
-    <div class="sub">档案只记两样：她是谁（身份/年龄/身材/性格）、怎么约的（预约类型/下次预约时间/登场与偕同），再加一个「补充」——你想起来就写进去，写一次长期生效，AI 每轮都读得到，不用你每次记得带上。好感度、性欲、心理想法、身体状态那些在每条 AI 消息末尾的状态栏里，这里不重复。点名字切换查看，点「展开档案」看详情，点「设为目标 · 填入输入栏」把她的信息填进输入栏——你补充修改完再发出去，以你发送的内容为准</div>
+    <div class="sub">上面「我的档案」写的是你自己：女主们当面怎么称呼你、你的年龄与外在、脾气与说话的腔调、身家来头、能动用的人与场子。写进去就是硬约束，AI 每轮都按它写，与卡片默认写法冲突时以这里为准；留空的项目它会保持含糊，不会替你编一个具体的。下面是她那一摞：只记她是谁（身份/年龄/身材/性格）、怎么约的（预约类型/下次预约时间/登场与偕同），再加一个「补充」——你想起来就写进去，写一次长期生效，不用你每次记得带上。好感度、性欲、心理想法、身体状态那些在每条 AI 消息末尾的状态栏里，这里不重复。点名字切换查看，点「展开档案」看详情，点「设为目标 · 填入输入栏」把她的信息填进输入栏——你补充修改完再发出去，以你发送的内容为准</div>
+    <div id="recSelf"></div>
     <div id="recBody"></div>
   </div>
 
@@ -816,6 +831,140 @@
     });
   }
 
+  // ---------- 我的档案（{{user}} 本人） ----------
+  // 挂在自己的容器 #recSelf 上，不在 recRender 的重画范围里：那个 2.5 秒轮询只刷
+  // #recBody，碰不到这里，所以打到一半的字不会被抹掉。代价是不自动跟进外部改动
+  // ——只在展开、保存、撤销、开面板这几处各读一次快照。
+  var SELF_FIELDS = [
+    { k: '称呼',     lab: '称呼',       ph: '女主们当面怎么称呼你；留空就还按你原来的名字叫', rows: 1 },
+    { k: '年龄',     lab: '年龄',       ph: '只填数字，例如 36；不填就留 0', rows: 1, num: true },
+    { k: '外在',     lab: '外在形象',   ph: '身高体型、气质、惯常穿着', rows: 2 },
+    { k: '性格',     lab: '性格',       ph: '脾气底色、对她们惯用的姿态（强势／温和／若即若离）', rows: 2 },
+    { k: '说话方式', lab: '说话方式',   ph: '口吻、口癖、惯用句式', rows: 2 },
+    { k: '身家',     lab: '身家与来头', ph: '产业、在哪个圈子、对外的名头，钱从哪来', rows: 2 },
+    { k: '资源',     lab: '资源与人脉', ph: '管家司机侍者这类身边人、私人场地、办事的手段与能量', rows: 2 },
+    { k: '补充',     lab: '其他补充',   ph: '上面装不下的其他要求', rows: 3 }
+  ];
+  var self = { open: false, loaded: false };
+  function selfStr(me, k) {
+    var v = me ? me[k] : '';
+    if (v === undefined || v === null) return '';
+    var s = String(v);
+    return (k === '年龄' && (s === '0' || s === '')) ? '' : s;
+  }
+  // 收起时的一行摘要：称呼 · 年龄 · 身家（只挑这三样，够认出「写没写」）
+  function selfSummary(me) {
+    var parts = [];
+    var c = selfStr(me, '称呼').trim();
+    var a = selfStr(me, '年龄').trim();
+    var m = selfStr(me, '身家').trim();
+    if (c) parts.push(c);
+    if (a) parts.push(a + ' 岁');
+    if (m) parts.push(m);
+    return parts.join(' · ');
+  }
+  function selfRender() {
+    readStat().then(function (stat) {
+      var box = $('recSelf');
+      if (!box) return;
+      if (!stat) {
+        if (!self.loaded) box.innerHTML = '<div class="empty">等待楼层环境…（与 AI 对话一轮后此处可填）</div>';
+        return;
+      }
+      self.loaded = true;
+      var me = pget(stat, '玩家', {}) || {};
+      var sum = selfSummary(me);
+      var html = '<div class="selfbox">' +
+        '<div class="selfhd" data-sact="toggle">' +
+        '<span class="pname">我的档案</span>' +
+        '<span class="pbrief">' + (sum ? esc(sum) : '还没写 · AI 现在自由发挥你是谁') + '</span>' +
+        '<span class="pexpand">' + (self.open ? '收起 ▴' : '展开 ▾') + '</span>' +
+        '</div>' +
+        '<div class="selfbody' + (self.open ? ' open' : '') + '">';
+      if (self.open) {
+        html += '<div class="selfnote">写在这里的是硬约束：AI 每轮都按它写，与卡片默认写法冲突时以这里为准。留空的项目它会保持含糊，不会替你编一个具体的。</div>';
+        SELF_FIELDS.forEach(function (f) {
+          html += '<div class="selflab">' + esc(f.lab) + '</div>' +
+            '<textarea class="tin tarea" data-sf="' + esc(f.k) + '" rows="' + (f.rows || 2) + '" placeholder="' +
+            esc(f.ph) + '">' + esc(selfStr(me, f.k)) + '</textarea>';
+        });
+        html += '<div class="selfops">' +
+          '<span class="opt on" data-sact="save">保存（下一轮起生效）</span>' +
+          '<span class="opt" data-sact="reload">撤销改动</span>' +
+          '<span class="opt" data-sact="clear">清空全部</span>' +
+          '</div>';
+      }
+      html += '</div></div>';
+      box.innerHTML = html;
+      reportHeight();
+    });
+  }
+  // 只写「玩家」这一个对象，其他字段一律不碰；
+  // 在 updateVariablesWith 的回调里基于最新快照改，避免和 AI 刚写的那一轮打架。
+  function saveSelf(obj) {
+    return withStatOpt(function (opt) {
+      return thCall('updateVariablesWith', [function (v) {
+        var stat = pget(v, 'stat_data', {}) || {};
+        var me = pget(stat, '玩家', {}) || {};
+        Object.keys(obj).forEach(function (k) { me[k] = obj[k]; });
+        pset(stat, '玩家', me);
+        return v;
+      }, opt]);
+    });
+  }
+  function collectSelf() {
+    var box = $('recSelf');
+    var out = {};
+    SELF_FIELDS.forEach(function (f) {
+      var el = box ? box.querySelector('[data-sf="' + f.k + '"]') : null;
+      var raw = el ? String(el.value || '').trim() : '';
+      if (f.num) {
+        var n = parseInt(raw, 10);
+        out[f.k] = (!raw || isNaN(n) || n < 0) ? 0 : Math.min(200, n);
+      } else {
+        out[f.k] = raw;
+      }
+    });
+    return out;
+  }
+  var selfBound = false;
+  function bindSelf() {
+    if (selfBound) return;
+    var box = $('recSelf');
+    if (!box) return;
+    selfBound = true;
+    box.addEventListener('click', function (e) {
+      var el = e.target;
+      if (!el.getAttribute) return;
+      var act = el.getAttribute('data-sact');
+      if (act === 'toggle') { self.open = !self.open; selfRender(); return; }
+      if (act === 'reload') { selfRender(); tip('已撤销未保存的改动'); return; }
+      if (act === 'clear') {
+        inlineAsk('清空「我的档案」的全部内容？\n（清空后 AI 会重新自由发挥你是谁，直到你再填。）', function () {
+          var empty = {};
+          SELF_FIELDS.forEach(function (f) { empty[f.k] = f.num ? 0 : ''; });
+          saveSelf(empty).then(function () {
+            selfRender();
+            tip('已清空「我的档案」');
+          }).catch(function (err) { tip('清空失败：' + (err && err.message ? err.message : err)); });
+        });
+        return;
+      }
+      if (act === 'save') {
+        if (!self.open) return;
+        var obj = collectSelf();
+        var n = 0;
+        SELF_FIELDS.forEach(function (f) { if (obj[f.k]) n++; });
+        saveSelf(obj).then(function () {
+          selfRender();
+          tip(n ? ('已保存「我的档案」的 ' + n + ' 项，从下一轮起长期生效')
+                : '已保存：档案是空的，AI 会保持含糊，不替你编');
+        }).catch(function (err) { tip('保存失败：' + (err && err.message ? err.message : err)); });
+        return;
+      }
+    });
+  }
+
   // ---------- 预约撞车检测 ----------
   // 撞车定义：预约类型相同、且都填了同一个具体时间（待定不算，交给 AI 顺延）
   function timeClash(a, b) {
@@ -1141,7 +1290,9 @@
       if (g) g.style.display = 'none';
       if (r) r.style.display = 'block';
       bindRec();
+      bindSelf();
       recRender();
+      selfRender();
     } else {
       if (r) r.style.display = 'none';
       if (g) g.style.display = 'block';
@@ -1150,7 +1301,10 @@
     }
     reportHeight();
     setInterval(function () {
-      if (MODE === 'record') recRender(true);   // 自动刷新：正在写补充时让路，别把字抹了
+      if (MODE === 'record') {
+        recRender(true);                   // 自动刷新：正在写补充时让路，别把字抹了
+        if (!self.loaded) selfRender();    // 我的档案：只在还没读到快照时重试；读到之后不再自动重画，免得抹掉正在填的表
+      }
       reportHeight();
     }, 2500);
     if (window.ResizeObserver) {
