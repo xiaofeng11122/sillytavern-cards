@@ -184,6 +184,16 @@
   .ask-no:hover { color: #fff; }
   .tin { width: 100%; margin: 2px 0 2px; padding: 6px 9px; font-size: 12px; font-family: inherit; color: #dbe7ff; background: #0a1322; border: 1px solid var(--cyan-line); outline: none; }
   .tin:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 229, 255, .3); }
+  /* ---------- 补充：随手记的额外要求（多行，可换行排版） ---------- */
+  .tarea { resize: vertical; min-height: 64px; line-height: 1.75; box-sizing: border-box; }
+  .notepv { margin: 3px 0 2px; padding: 6px 9px; font-size: 11px; line-height: 1.75; color: #ffd9e6;
+    background: rgba(255, 45, 120, .07); border-left: 2px solid var(--magenta); white-space: pre-wrap; word-break: break-word; }
+  .noteedit { border-color: var(--magenta-line); background: rgba(255, 45, 120, .05); }
+  .noteedit .ttl { color: #ff8ab5; }
+  .noteedit textarea { border-color: var(--magenta-line); }
+  .noteedit textarea:focus { border-color: var(--magenta); box-shadow: 0 0 10px rgba(255, 45, 120, .3); }
+  .dim.note { border-bottom-color: rgba(255, 45, 120, .5); }
+  .dim.note:hover { color: var(--magenta); border-bottom-color: var(--magenta); text-shadow: 0 0 8px rgba(255, 45, 120, .5); }
 </style>
 </head>
 <body>
@@ -192,14 +202,14 @@
   <!-- 模式一：人物生成器（选人）。开场白注入的是这一块，输入栏「沐心堂 · 选人」按钮展开的也是这一块 -->
   <div id="genMode" style="display:none">
     <div class="hd">沐心堂 · 选人<span class="sys">SYS · ONLINE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
-    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁，同伴年龄不超过45岁）· 每位可单独入池，只覆盖那一个</div>
+    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁，同伴年龄不超过45岁）· 每位可单独入池，只覆盖那一个 · 每位都能写「补充」：觉得她差点意思就记下来（语气、来历、特征、忌讳），入池后随她长期生效，AI 每轮都读得到</div>
     <div id="genSel"></div>
   </div>
 
   <!-- 模式二：人物记录器（档案）。与生成器互相独立，由「沐心堂 · 档案」按钮展开 -->
   <div id="recMode" style="display:none">
     <div class="hd">沐心堂 · 档案<span class="sys">ARCHIVE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
-    <div class="sub">档案只记两样：她是谁（身份/年龄/身材/性格）、怎么约的（预约类型/下次预约时间/登场与偕同）。好感度、性欲、心理想法、身体状态那些在每条 AI 消息末尾的状态栏里，这里不重复。点名字切换查看，点「展开档案」看详情，点「设为目标 · 填入输入栏」把她的信息填进输入栏——你补充修改完再发出去，以你发送的内容为准</div>
+    <div class="sub">档案只记两样：她是谁（身份/年龄/身材/性格）、怎么约的（预约类型/下次预约时间/登场与偕同），再加一个「补充」——你想起来就写进去，写一次长期生效，AI 每轮都读得到，不用你每次记得带上。好感度、性欲、心理想法、身体状态那些在每条 AI 消息末尾的状态栏里，这里不重复。点名字切换查看，点「展开档案」看详情，点「设为目标 · 填入输入栏」把她的信息填进输入栏——你补充修改完再发出去，以你发送的内容为准</div>
     <div id="recBody"></div>
   </div>
 
@@ -427,6 +437,7 @@
       time: '待定',
       party: '单人',
       mates: [],
+      note: '',          // {{user}} 手写的补充要求，随她一起入池；不参与随机
       existing: false
     };
   }
@@ -464,13 +475,14 @@
         time: h['下次预约时间'] || '待定',
         party: h['登场人数'] || '单人',
         mates: (h['同伴'] || []).map(function (m) { return { rel: m['关系'] || '', age: m['年龄'] || 0 }; }).filter(function (m) { return m.rel; }),
+        note: h['补充'] || '',
         existing: true
       };
     });
   }
 
   // ---------- 单人轮播选择器（生成器与面板共用） ----------
-  var sel = { heroes: [], idx: 0, editingIdx: -1, editingTime: -1, pickType: null, host: null, inited: false };
+  var sel = { heroes: [], idx: 0, editingIdx: -1, editingTime: -1, editingNote: -1, pickType: null, host: null, inited: false };
   function cur() { return sel.heroes[sel.idx]; }
   function kinkChips(h) {
     return h.kinks.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('');
@@ -520,6 +532,23 @@
       '<span class="opt on" data-act="timeOk" data-i="' + i + '">确定</span>' +
       '<span class="opt" data-act="timeCancel" data-i="' + i + '">取消</span></div>';
   }
+  // 补充：{{user}} 随手写下的额外要求（她的语气/来历/特征/忌讳）。
+  // 存在她身上、随她入池，由常驻世界书条目每轮注入，不依赖 {{user}} 记得带上。
+  function noteEditor(h, i) {
+    if (sel.editingNote !== i) return '';
+    return '<div class="picker noteedit"><div class="ttl">补充（写你对她的要求；与默认设定冲突时以你写的为准，写一次就长期生效）</div>' +
+      '<textarea id="noteInput" class="tin tarea" rows="3" placeholder="例：她说话很慢，带南方口音；左手腕有一道旧疤；不爱主动，喝过酒才会黏人">' + esc(h.note || '') + '</textarea>' +
+      '<span class="opt on" data-act="noteOk" data-i="' + i + '">保存</span>' +
+      '<span class="opt" data-act="noteCancel" data-i="' + i + '">取消</span>' +
+      '<span class="opt" data-act="noteClear" data-i="' + i + '">清空</span></div>';
+  }
+  function noteBlock(h, i) {
+    var has = !!(h.note && String(h.note).trim());
+    return '<div class="row"><b>补充</b> · <span class="dim note" data-act="note" data-i="' + i + '">' +
+      (has ? '有（点开修改）' : '还没写（点开写）') + '</span></div>' +
+      (has ? '<div class="notepv">' + esc(h.note) + '</div>' : '') +
+      noteEditor(h, i);
+  }
   function selCard(h, i) {
     var timeLabel = h.time && h.time !== '待定' ? h.time : '待定 ✎';
     var soloLabel = h.existing ? '更新入池 · 只改她一个（进度保留）' : '入池 · 只她一个';
@@ -530,6 +559,7 @@
       '<div class="row"><b>外在</b> · <span class="dim" data-act="outer" data-i="' + i + '">' + esc(h.outer) + '</span></div>' +
       '<div class="row"><b>内在</b> · <span class="dim" data-act="inner" data-i="' + i + '">' + esc(h.inner) + '</span></div>' +
       '<div class="row kinks"><b>性癖</b> · <span class="dim" data-act="kink" data-i="' + i + '">换一组</span><br>' + kinkChips(h) + '</div>' +
+      noteBlock(h, i) +
       '<div class="row"><b>预约</b> · <span class="dim" data-act="appoint" data-i="' + i + '">' + esc(h.appoint) + '</span>' +
       ' · <span class="dim" data-act="appointTime" data-i="' + i + '">' + esc(timeLabel) + '</span>' + timeEditor(h, i) +
       ' · <span class="dim" data-act="party" data-i="' + i + '">' + esc(h.party) + '</span>登场</div>' +
@@ -562,12 +592,15 @@
       '<div class="ops">' + opsHtml + '</div>' +
       '<div class="tip" id="tip">' + tipDefault + '</div>';
     if (n > 1) {
-      $('prevBtn').addEventListener('click', function () { sel.idx = (sel.idx - 1 + n) % n; sel.editingIdx = -1; sel.editingTime = -1; selRender(); });
-      $('nextBtn').addEventListener('click', function () { sel.idx = (sel.idx + 1) % n; sel.editingIdx = -1; sel.editingTime = -1; selRender(); });
+      $('prevBtn').addEventListener('click', function () { sel.idx = (sel.idx - 1 + n) % n; sel.editingIdx = -1; sel.editingTime = -1; sel.editingNote = -1; selRender(); });
+      $('nextBtn').addEventListener('click', function () { sel.idx = (sel.idx + 1) % n; sel.editingIdx = -1; sel.editingTime = -1; sel.editingNote = -1; selRender(); });
     }
     $('reroll').addEventListener('click', function () {
-      if (n > 1) { sel.heroes = [genOne(), genOne(), genOne()]; sel.idx = 0; }
-      else { sel.heroes[0] = genOne(); }
+      // 重抽只换人，不丢补充：{{user}} 写的要求是给「这个人」立的，换一位后仍该继续管着
+      var keep = sel.heroes.map(function (h) { return h.note || ''; });
+      function carried(h, k) { h.note = keep[k] || ''; return h; }
+      if (n > 1) { sel.heroes = [genOne(), genOne(), genOne()].map(carried); sel.idx = 0; }
+      else { sel.heroes[0] = carried(genOne(), 0); }
       sel.editingIdx = -1;
       selRender();
     });
@@ -580,7 +613,7 @@
       var el2 = e.target;
       var act = el2.getAttribute && el2.getAttribute('data-act');
       if (!act) return;
-      if (act === 'goto') { sel.idx = parseInt(el2.getAttribute('data-v'), 10) || 0; sel.editingIdx = -1; selRender(); return; }
+      if (act === 'goto') { sel.idx = parseInt(el2.getAttribute('data-v'), 10) || 0; sel.editingIdx = -1; sel.editingTime = -1; sel.editingNote = -1; selRender(); return; }
       var i = parseInt(el2.getAttribute('data-i'), 10);
       if (isNaN(i)) i = sel.editingIdx;        // 兜底：认不出是哪一位就用当前正在编辑的那位
       var h = sel.heroes[i];
@@ -620,6 +653,28 @@
         selRender(); return;
       }
       if (act === 'timeCancel') { sel.editingTime = -1; selRender(); return; }
+      if (act === 'note') {
+        sel.editingNote = (sel.editingNote === i) ? -1 : i;
+        sel.editingIdx = -1;
+        sel.editingTime = -1;
+        selRender(); return;
+      }
+      if (act === 'noteOk') {
+        var nin = $('noteInput');
+        if (nin) h.note = String(nin.value || '').trim();
+        sel.editingNote = -1;
+        selRender();
+        tip(h.note ? '补充已记在她身上，入池后会随她长期生效' : '补充是空的，这一位没有额外要求');
+        return;
+      }
+      if (act === 'noteClear') {
+        // 只清输入框，不直接落库：清空是不可撤销的，必须由「保存」这一步确认
+        var nin2 = $('noteInput');
+        if (nin2) nin2.value = '';
+        tip('输入框已清空，点「保存」才会真的抹掉她的补充');
+        return;
+      }
+      if (act === 'noteCancel') { sel.editingNote = -1; selRender(); return; }
       if (act === 'rel') {
         var r = relByKey(el2.getAttribute('data-v'));
         if (!r) return;
@@ -649,6 +704,8 @@
       var n = sel.heroes.length;
       sel.idx = (sel.idx + (dx < 0 ? 1 : -1) + n) % n;
       sel.editingIdx = -1;
+      sel.editingTime = -1;
+      sel.editingNote = -1;
       selRender();
     }, { passive: true });
     // 键盘左右键
@@ -656,10 +713,15 @@
       bindSelContainer.bound = true;
       document.addEventListener('keydown', function (e) {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        // 正在文本框里打字时左右键是移动光标，不是换人
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
         if (sel.heroes.length < 2 || !sel.host) return;
         var n = sel.heroes.length;
         sel.idx = (sel.idx + (e.key === 'ArrowRight' ? 1 : -1) + n) % n;
         sel.editingIdx = -1;
+        sel.editingTime = -1;
+        sel.editingNote = -1;
         selRender();
       });
     }
@@ -701,7 +763,10 @@
       '性欲': (existing && typeof existing['性欲'] === 'number') ? existing['性欲'] : 5,
       // 心理想法/身体状态留给 AI 在首轮互动后补写
       '心理想法': '',
-      '身体状态': ''
+      '身体状态': '',
+      // 补充必须原样带过：这一份档案是整对象重建的，漏了这一步，
+      // {{user}} 写下的东西会被入池/更新档案这个动作悄悄抹掉
+      '补充': (h.note === undefined ? ((existing && existing['补充']) || '') : (h.note || ''))
     };
   }
   function buildHarem() {
@@ -734,6 +799,20 @@
         if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
         return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
       });
+    });
+  }
+
+  // 只改一个人的「补充」，其他字段一律不碰。
+  // 在 updateVariablesWith 的回调里基于最新快照改，避免和 AI 刚写的那一轮打架。
+  function saveNote(name, text) {
+    return withStatOpt(function (opt) {
+      return thCall('updateVariablesWith', [function (v) {
+        var stat = pget(v, 'stat_data', {}) || {};
+        var harem = pget(stat, '后宫', {}) || {};
+        if (!harem[name]) return v;
+        harem[name]['补充'] = text;
+        return v;
+      }, opt]);
     });
   }
 
@@ -812,18 +891,21 @@
     return '，偕同：' + h['同伴'].map(function (m) { return m['关系'] + '（' + (m['年龄'] || '') + '岁）'; }).join('、');
   }
   function soloLines(h) {
-    return [
+    var lines = [
       '【入池：' + h.name + '】',
       h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
-        matesText(h) + '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）',
-      '（本段由状态栏自动填入，可修改补充；以你发送的内容为准）'
+        matesText(h) + '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）'
     ];
+    if (h.note) lines.push('我对她的补充：' + h.note);
+    lines.push('（本段由状态栏自动填入，可修改补充；以你发送的内容为准）');
+    return lines;
   }
   function rosterLines() {
     var lines = ['【花名册已更新】'];
     sel.heroes.forEach(function (h) {
       lines.push(h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
         matesText(h) + '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）');
+      if (h.note) lines.push('　' + h.name + '的补充：' + h.note);
     });
     lines.push('当前目标：' + sel.heroes[0].name);
     lines.push('（本段由状态栏自动填入，可修改补充；以你发送的内容为准）');
@@ -835,10 +917,13 @@
       '【切换目标：' + name + '】',
       '身份：' + (h['身份'] || '') + '，' + (h['年龄'] || '') + '岁',
       '身材：' + (h['身材'] || ''),
-      '性格：外 ' + (h['外在性格'] || '') + ' × 内 ' + (h['内在性格'] || ''),
+      '性格：外 ' + (h['外在性格'] || '') + ' × 内 ' + (h['内在性格'] || '')
+    ];
+    if (h['补充']) lines.push('我对她的补充：' + h['补充']);
+    lines.push(
       '已解锁性癖：' + (kinks.length ? kinks.join('、') : '尚未解锁'),
       '好感度 ' + (h['好感度'] || 0) + '（' + stageOf(h['好感度'] || 0) + '）· 性欲 ' + (h['性欲'] || 0)
-    ];
+    );
     if (h['心理想法']) lines.push('她当下的念头：' + h['心理想法']);
     if (h['身体状态']) lines.push('她当下的状态：' + h['身体状态']);
     lines.push('预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人'));
@@ -926,8 +1011,20 @@
   }
 
   // ---------- 人物记录（折叠档案 + 只读 + 设为目标） ----------
-  var rec = { current: null, open: false, expanded: {} };
-  function recRender() {
+  var rec = { current: null, open: false, expanded: {}, editingNote: false };
+  // 补充编辑区
+  function noteEditorRec(text) {
+    if (!rec.editingNote) return '';
+    return '<div class="picker noteedit"><div class="ttl">补充（写你对她的要求；保存后从下一轮起长期生效，与默认设定冲突时以你写的为准）</div>' +
+      '<textarea id="recNoteInput" class="tin tarea" rows="3" placeholder="例：她说话很慢，带南方口音；左手腕有一道旧疤；不爱主动，喝过酒才会黏人">' + esc(text) + '</textarea>' +
+      '<span class="opt on" data-act="noteOk">保存</span>' +
+      '<span class="opt" data-act="noteCancel">取消</span>' +
+      '<span class="opt" data-act="noteClear">清空</span></div>';
+  }
+  // fromTimer=true 表示这是 2.5 秒轮询触发的自动刷新；
+  // 此时若你正在写补充，重画会把输入框连同你打的字一起抹掉 —— 所以自动刷新让路。
+  function recRender(fromTimer) {
+    if (fromTimer && rec.editingNote) return;
     readStat().then(function (stat) {
       var box = $('recBody');
       if (!box) return;
@@ -967,6 +1064,11 @@
           ? ('　<b>偕同</b> · ' + mates.map(function (m) { return esc(m['关系']) + '（' + esc(m['年龄']) + '岁）'; }).join('、'))
           : '') +
         '</div>' +
+        // 补充：只记 {{user}} 自己的话，写一次长期生效（由常驻世界书条目每轮注入）
+        '<div class="row"><b>补充</b> · <span class="dim note" data-act="note">' +
+        (h['补充'] ? '有（点开修改）' : '还没写（点开写）') + '</span></div>' +
+        (h['补充'] ? '<div class="notepv">' + esc(h['补充']) + '</div>' : '') +
+        noteEditorRec(h['补充'] || '') +
         '<span class="targetbtn" data-target="' + esc(rec.current) + '">设为目标 · 填入输入栏</span>' +
         '</div></div>';
       box.innerHTML = html;
@@ -982,10 +1084,27 @@
       var el = e.target;
       if (!el.getAttribute) return;
       var n = el.getAttribute('data-n');
-      if (n) { rec.current = n; recRender(); return; }
-      if (el.getAttribute('data-act') === 'toggle') {
+      if (n) { rec.current = n; rec.editingNote = false; recRender(); return; }
+      var act = el.getAttribute('data-act');
+      if (act === 'toggle') {
         rec.expanded[rec.current] = !rec.expanded[rec.current];
         recRender(); return;
+      }
+      if (act === 'note') { rec.editingNote = !rec.editingNote; recRender(); return; }
+      if (act === 'noteCancel') { rec.editingNote = false; recRender(); return; }
+      if (act === 'noteClear') { var nin = $('recNoteInput'); if (nin) nin.value = ''; return; }
+      if (act === 'noteOk') {
+        var box2 = $('recNoteInput');
+        var txt = box2 ? String(box2.value || '').trim() : '';
+        var who = rec.current;
+        saveNote(who, txt).then(function () {
+          rec.editingNote = false;
+          recRender();
+          tip(txt ? ('已保存「' + who + '」的补充，从下一轮起长期生效') : ('已清空「' + who + '」的补充'));
+        }).catch(function (err) {
+          tip('保存失败：' + (err && err.message ? err.message : err));
+        });
+        return;
       }
       var t = el.getAttribute('data-target');
       if (t) {
@@ -1031,7 +1150,7 @@
     }
     reportHeight();
     setInterval(function () {
-      if (MODE === 'record') recRender();
+      if (MODE === 'record') recRender(true);   // 自动刷新：正在写补充时让路，别把字抹了
       reportHeight();
     }, 2500);
     if (window.ResizeObserver) {
