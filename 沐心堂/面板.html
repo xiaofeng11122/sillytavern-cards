@@ -280,12 +280,41 @@
     fillEl.style.width = val + '%';
   }
   // 面板常驻输入栏上方，**不在任何消息楼层里**，没有 getCurrentMessageId 可用，
-  // 所以固定读最新楼层的 message 快照（message_id:-1）；失败再退到 chat 作用域。
+  // 所以要自己指认楼层。本项目是**按楼层**存 MVU 快照（MagVarUpdate 写的），
+  // `message_id` 的负数索引有官方声明支持（-1 = 最新楼层），故首选 -1；
+  // 万一某个版本不认，依次退到 'latest' 与 getLastMessageId() 取到的具体楼层号，
+  // 最后再退一次性 chat 作用域（万一这张卡被改成聊天级变量）。
+  function statOpts() {
+    return [
+      { type: 'message', message_id: -1 },
+      { type: 'message', message_id: 'latest' }
+    ];
+  }
+  function withStatOpt(run) {
+    var opts = statOpts();
+    function attempt(i) {
+      if (i < opts.length) {
+        return run(opts[i]).catch(function () { return attempt(i + 1); });
+      }
+      return thCall('getLastMessageId', undefined).then(function (id) {
+        return run({ type: 'message', message_id: id });
+      });
+    }
+    return attempt(0);
+  }
   function readStat() {
-    return thCall('getVariables', [{ type: 'message', message_id: -1 }])
-      .catch(function () { return thCall('getVariables', [{ type: 'chat' }]); })
-      .then(function (v) { return pget(v, 'stat_data', null); })
-      .catch(function () { return null; });
+    return withStatOpt(function (opt) {
+      return thCall('getVariables', [opt]).then(function (v) {
+        var stat = pget(v, 'stat_data', null);
+        // 空快照不算读到了，换下一个作用域继续试
+        if (stat && typeof stat === 'object' && Object.keys(stat).length) return stat;
+        throw new Error('本楼层还没有变量快照');
+      });
+    }).catch(function () {
+      return thCall('getVariables', [{ type: 'chat' }])
+        .then(function (v) { return pget(v, 'stat_data', null); })
+        .catch(function () { return null; });
+    });
   }
   function weighted(arr) {
     // 池内前两项重复占位，体现身份对搭配的倾向性，其余等权
@@ -681,25 +710,27 @@
   }
   // 写入一律落到**最新楼层**的 message 快照（-1）：面板不在楼层里，取不到“当前楼层”。
   function writeStat(harem, firstName, phase) {
-    var opt = { type: 'message', message_id: -1 };
-    return thCall('getVariables', [opt]).then(function (vars) {
-      var stat = pget(vars, 'stat_data', {}) || {};
-      pset(stat, '后宫', harem);
-      if (firstName) pset(stat, '世界.当前女主', firstName);
-      if (phase) pset(stat, '剧情.剧情阶段', phase);
-      return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+    return withStatOpt(function (opt) {
+      return thCall('getVariables', [opt]).then(function (vars) {
+        var stat = pget(vars, 'stat_data', {}) || {};
+        pset(stat, '后宫', harem);
+        if (firstName) pset(stat, '世界.当前女主', firstName);
+        if (phase) pset(stat, '剧情.剧情阶段', phase);
+        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+      });
     });
   }
   // 单人入池/更新：只写她一个，其他人的档案与进度原样保留
   function writeOne(h, existing) {
-    var opt = { type: 'message', message_id: -1 };
-    return thCall('getVariables', [opt]).then(function (vars) {
-      var stat = pget(vars, 'stat_data', {}) || {};
-      var harem = pget(stat, '后宫', {}) || {};
-      harem[h.name] = buildOne(h, existing || harem[h.name]);
-      if (!pget(stat, '世界.当前女主', '')) pset(stat, '世界.当前女主', h.name);
-      if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
-      return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+    return withStatOpt(function (opt) {
+      return thCall('getVariables', [opt]).then(function (vars) {
+        var stat = pget(vars, 'stat_data', {}) || {};
+        var harem = pget(stat, '后宫', {}) || {};
+        harem[h.name] = buildOne(h, existing || harem[h.name]);
+        if (!pget(stat, '世界.当前女主', '')) pset(stat, '世界.当前女主', h.name);
+        if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
+        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+      });
     });
   }
 
