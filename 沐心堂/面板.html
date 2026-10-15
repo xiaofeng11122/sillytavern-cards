@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>沐心堂·状态栏</title>
+<title>沐心堂 · 面板</title>
 <style>
   :root {
     --bg: #070b14;
@@ -98,6 +98,9 @@
   /* ---------- 生成器头部 ---------- */
   .hd { font-size: 18px; font-weight: 700; letter-spacing: 3px; color: #fff; text-shadow: 0 0 12px rgba(0, 229, 255, .85), 0 0 30px rgba(0, 229, 255, .4); display: flex; align-items: center; gap: 8px; }
   .hd .sys { font-family: var(--mono); font-size: 10px; color: var(--cyan); letter-spacing: 1px; text-shadow: none; border: 1px solid var(--cyan-line); padding: 1px 6px; font-weight: 400; }
+  /* 收起控件：点了给宿主脚本发 close，由宿主收起浮层／折叠开场白卡片 */
+  .hd-x { margin-left: auto; font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--line); padding: 2px 9px; cursor: pointer; text-shadow: none; transition: all .15s; }
+  .hd-x:hover { color: #fff; border-color: var(--cyan-line); box-shadow: 0 0 10px rgba(0, 229, 255, .25); }
   .sub { font-size: 11px; color: var(--muted); margin: 6px 0 10px; line-height: 1.7; }
 
   /* ---------- 单人轮播生成器 ---------- */
@@ -188,14 +191,14 @@
 
   <!-- 模式一：人物生成器（选人）。开场白注入的是这一块，输入栏「沐心堂 · 选人」按钮展开的也是这一块 -->
   <div id="genMode" style="display:none">
-    <div class="hd">沐心堂 · 选人<span class="sys">SYS · ONLINE</span></div>
+    <div class="hd">沐心堂 · 选人<span class="sys">SYS · ONLINE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
     <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁）· 每位可单独入池，只覆盖那一个</div>
     <div id="genSel"></div>
   </div>
 
   <!-- 模式二：人物记录器（档案）。与生成器互相独立，由「沐心堂 · 档案」按钮展开 -->
   <div id="recMode" style="display:none">
-    <div class="hd">沐心堂 · 档案<span class="sys">ARCHIVE</span></div>
+    <div class="hd">沐心堂 · 档案<span class="sys">ARCHIVE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
     <div class="sub">点名字切换查看 · 「展开档案」看她的个人信息、预约类型与下次预约时间 · 点「设为目标 · 填入输入栏」把她的现状填进输入栏，你改补充完再发出去，以你发送的内容为准</div>
     <div id="recBody"></div>
   </div>
@@ -995,6 +998,13 @@
   // ---------- 启动 ----------
   function bootPanel() {
     var g = $('genMode'), r = $('recMode');
+    // 「收起」控件：把收起动作交回宿主脚本（浮层关掉、开场白卡片折起来）
+    var hx = $('hdX');
+    if (hx) {
+      hx.addEventListener('click', function () {
+        framePost({ source: 'mxt-panel', type: 'close' });
+      });
+    }
     if (MODE === 'record') {
       if (g) g.style.display = 'none';
       if (r) r.style.display = 'block';
