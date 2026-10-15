@@ -5,97 +5,171 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>沐心堂·状态栏</title>
 <style>
+  :root {
+    --bg: #070b14;
+    --panel: #0d1626;
+    --panel2: #101b30;
+    --line: #1c2a45;
+    --cyan: #00e5ff;
+    --cyan-soft: rgba(0, 229, 255, .12);
+    --cyan-line: rgba(0, 229, 255, .40);
+    --magenta: #ff2d78;
+    --magenta-soft: rgba(255, 45, 120, .12);
+    --magenta-line: rgba(255, 45, 120, .45);
+    --yellow: #ffd60a;
+    --text: #c9d6f0;
+    --muted: #5c6f96;
+    --mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; color: #2b2b2b; background: #fffdf8; }
-  .wrap { max-width: 680px; margin: 0 auto; padding: 8px 12px 12px; }
-  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; }
-  .meta { color: #8a8a8a; }
-  .hero { font-weight: 600; font-size: 13px; }
-  .phase { color: #a08c6a; }
-  .switchbtn { font-size: 11px; color: #8a6a35; border: 1px solid #d8cfc4; border-radius: 10px; padding: 1px 9px; cursor: pointer; background: #fff; }
-  .switchbtn:hover { border-color: #b08d57; background: #f7efe2; }
-  .bars { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; }
-  .bar { flex: 1 1 160px; }
-  .bar .lab { display: flex; justify-content: space-between; font-size: 10px; color: #8a6a35; }
-  .bar .track { height: 5px; border-radius: 3px; background: #efe8dd; margin-top: 1px; }
-  .bar .fill { height: 5px; border-radius: 3px; background: #b08d57; }
-  .bar .fill.lust { background: #a35b5b; }
-  .panel { margin-top: 8px; border: 1px solid #e3ddd5; border-radius: 8px; background: #fff; overflow: hidden; }
-  .phead { padding: 7px 12px; font-size: 12px; font-weight: 600; color: #6b5f52; cursor: pointer; background: #faf6ef; user-select: none; }
-  .phead:hover { color: #8a6a35; }
-  .pbody { padding: 10px 12px 12px; border-top: 1px solid #efe8dd; }
-  .hd { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
-  .sub { font-size: 12px; color: #8a8a8a; margin: 4px 0 10px; line-height: 1.6; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1000px 300px at 15% -8%, rgba(0, 229, 255, .09), transparent 60%),
+      radial-gradient(800px 320px at 105% 110%, rgba(255, 45, 120, .08), transparent 60%),
+      var(--bg);
+  }
+  /* 扫描线覆盖层 */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(140, 185, 255, .04) 0, rgba(140, 185, 255, .04) 1px, transparent 1px, transparent 3px);
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 10px 12px 12px; }
+  .mono { font-family: var(--mono); }
+  .mut { color: var(--muted); }
+
+  /* ---------- 顶栏：日期/时间/场景/阶段 ---------- */
+  .meta-line { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 7px; font-size: 11px; color: var(--muted); letter-spacing: .5px; }
+  .meta-line .sep { color: #22355c; font-family: var(--mono); }
+  .meta-line #scene { color: #8fa8d8; }
+  .phase-tag { font-family: var(--mono); font-size: 10px; color: var(--yellow); border: 1px solid rgba(255, 214, 10, .45); padding: 0 6px; line-height: 16px; background: rgba(255, 214, 10, .07); clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px); }
+
+  /* ---------- 当前目标行 ---------- */
+  .hero-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; }
+  .hero-lab { font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+  .hero-name { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0, 229, 255, .8), 0 0 26px rgba(0, 229, 255, .35); }
+  .stage-tag { font-size: 10px; color: var(--cyan); border: 1px solid var(--cyan-line); padding: 0 7px; line-height: 15px; background: var(--cyan-soft); }
+  .switchbtn { margin-left: auto; font-size: 11px; color: var(--cyan); border: 1px solid var(--cyan-line); padding: 2px 10px; cursor: pointer; background: var(--cyan-soft); transition: all .15s; }
+  .switchbtn:hover { background: rgba(0, 229, 255, .25); box-shadow: 0 0 10px rgba(0, 229, 255, .35); }
+
+  /* ---------- 身份 / 年龄 / 身材 / 性癖（一行四格） ---------- */
+  .stat-grid { display: grid; grid-template-columns: 1.25fr .6fr 1.45fr 1.7fr; gap: 6px; margin-top: 8px; }
+  .stat { border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel2), var(--panel)); padding: 5px 8px 6px; min-width: 0; clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+  .stat-lab { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .stat-val { font-size: 12px; color: var(--text); margin-top: 2px; line-height: 1.45; word-break: break-all; }
+  .stat-kinks .stat-val { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+  .kchip { font-size: 10px; color: var(--magenta); border: 1px solid var(--magenta-line); background: var(--magenta-soft); padding: 0 6px; line-height: 15px; white-space: nowrap; }
+  .kchip.more { color: var(--muted); border-color: var(--line); background: none; }
+  @media (max-width: 560px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+
+  /* ---------- 心理想法 / 身体状态（各单独一行块） ---------- */
+  .block { margin-top: 8px; border: 1px solid var(--line); background: var(--panel); padding: 7px 10px 9px; position: relative; }
+  .block::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; }
+  .mind-block::before { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .body-block::before { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+  .block-lab { font-size: 11px; font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+  .mind-block .block-lab { color: var(--cyan); }
+  .body-block .block-lab { color: var(--magenta); }
+  .block-lab .mono { font-size: 9px; font-weight: 400; }
+  .lust-badge { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--yellow); border: 1px solid rgba(255, 214, 10, .5); background: rgba(255, 214, 10, .08); padding: 0 6px; line-height: 14px; }
+  .block-txt { font-size: 12px; line-height: 1.75; margin-top: 4px; color: #dbe7ff; }
+  .mind-block .block-txt { color: #b9ecff; }
+  .body-block .block-txt { color: #ffd9e8; }
+  .block-txt.empty { color: var(--muted); }
+
+  /* ---------- 好感度 / 性欲（各一行） ---------- */
+  .val-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .val-lab { font-size: 11px; color: var(--muted); width: 44px; letter-spacing: 1px; flex: 0 0 auto; }
+  .val-track { flex: 1; height: 8px; background: #0a1322; border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .val-fill { height: 100%; transition: width .35s ease; }
+  .val-fill.aff { background: linear-gradient(90deg, #007b9e, var(--cyan)); box-shadow: 0 0 10px rgba(0, 229, 255, .55); }
+  .val-fill.lust { background: linear-gradient(90deg, #8a1140, var(--magenta)); box-shadow: 0 0 10px rgba(255, 45, 120, .55); }
+  .val-num { font-size: 11px; color: var(--text); width: 26px; text-align: right; flex: 0 0 auto; }
+
+  /* ---------- 折叠面板 ---------- */
+  .panel { margin-top: 10px; border: 1px solid var(--line); background: var(--panel); }
+  .phead { padding: 7px 12px; font-size: 12px; font-weight: 600; color: #9fb9e8; cursor: pointer; background: linear-gradient(90deg, rgba(0, 229, 255, .06), transparent); user-select: none; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+  .phead::before { content: '▸'; color: var(--cyan); font-size: 10px; }
+  .phead.open::before { content: '▾'; }
+  .phead:hover { color: #fff; }
+  .pbody { padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+
+  /* ---------- 生成器头部 ---------- */
+  .hd { font-size: 18px; font-weight: 700; letter-spacing: 3px; color: #fff; text-shadow: 0 0 12px rgba(0, 229, 255, .85), 0 0 30px rgba(0, 229, 255, .4); display: flex; align-items: center; gap: 8px; }
+  .hd .sys { font-family: var(--mono); font-size: 10px; color: var(--cyan); letter-spacing: 1px; text-shadow: none; border: 1px solid var(--cyan-line); padding: 1px 6px; font-weight: 400; }
+  .sub { font-size: 11px; color: var(--muted); margin: 6px 0 10px; line-height: 1.7; }
 
   /* ---------- 单人轮播生成器 ---------- */
   .carousel { position: relative; display: flex; align-items: stretch; gap: 6px; }
-  .arrow { flex: 0 0 34px; border: 1px solid #d8cfc4; border-radius: 8px; background: #fff; color: #8a6a35; font-size: 18px; cursor: pointer; }
-  .arrow:hover { border-color: #b08d57; background: #f7efe2; }
-  .arrow:disabled { opacity: .35; cursor: default; }
+  .arrow { flex: 0 0 34px; border: 1px solid var(--cyan-line); background: var(--cyan-soft); color: var(--cyan); font-size: 18px; cursor: pointer; }
+  .arrow:hover { background: rgba(0, 229, 255, .25); box-shadow: 0 0 10px rgba(0, 229, 255, .3); }
+  .arrow:disabled { opacity: .3; cursor: default; box-shadow: none; }
   .stage { flex: 1 1 auto; min-width: 0; }
-  .card { border: 1px solid #e3ddd5; border-radius: 8px; padding: 10px 12px; background: #ffffff; }
-  .nm { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-  .nm .age { font-weight: 400; color: #999; font-size: 12px; margin-left: 4px; }
-  .row { font-size: 12px; line-height: 1.6; margin: 3px 0; color: #555; }
-  .row b { color: #2b2b2b; font-weight: 500; }
-  .dim { cursor: pointer; border-bottom: 1px dashed #c9beb0; }
-  .dim:hover { color: #8a6a35; border-bottom-color: #8a6a35; }
+  .card { border: 1px solid var(--cyan-line); background: linear-gradient(180deg, var(--panel2), var(--panel)); padding: 10px 12px; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+  .nm { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #fff; letter-spacing: 1px; }
+  .nm .age { font-weight: 400; color: var(--cyan); font-family: var(--mono); font-size: 12px; margin-left: 6px; }
+  .row { font-size: 12px; line-height: 1.7; margin: 3px 0; color: #a9bde3; }
+  .row b { color: var(--muted); font-weight: 400; font-family: var(--mono); font-size: 10px; letter-spacing: 1px; margin-right: 2px; }
+  .dim { cursor: pointer; border-bottom: 1px dashed rgba(0, 229, 255, .45); color: #dbe7ff; }
+  .dim:hover { color: var(--cyan); border-bottom-color: var(--cyan); text-shadow: 0 0 8px rgba(0, 229, 255, .5); }
   .kinks { margin-top: 2px; }
-  .chip { display: inline-block; padding: 1px 7px; margin: 2px 3px 2px 0; border: 1px solid #d8cfc4; border-radius: 10px; font-size: 11px; color: #6b5f52; background: #fff; }
-  .picker { margin-top: 6px; border: 1px dashed #c9beb0; border-radius: 6px; padding: 6px; background: #fdfaf4; }
-  .picker .ttl { font-size: 11px; color: #999; margin-bottom: 4px; }
-  .opt { display: inline-block; padding: 2px 8px; margin: 0 4px 4px 0; font-size: 11px; border: 1px solid #d8cfc4; border-radius: 10px; background: #fff; cursor: pointer; color: #6b5f52; }
-  .opt:hover { border-color: #b08d57; color: #8a6a35; }
-  .opt.on { border-color: #8a6a35; color: #8a6a35; background: #f7efe2; }
+  .chip { display: inline-block; padding: 1px 7px; margin: 2px 4px 2px 0; border: 1px solid var(--magenta-line); font-size: 10px; color: var(--magenta); background: var(--magenta-soft); }
+  .picker { margin-top: 6px; border: 1px dashed var(--cyan-line); padding: 6px 8px; background: rgba(0, 229, 255, .04); }
+  .picker .ttl { font-size: 10px; color: var(--muted); margin-bottom: 4px; font-family: var(--mono); letter-spacing: 1px; }
+  .opt { display: inline-block; padding: 2px 9px; margin: 0 5px 5px 0; font-size: 11px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; color: #a9bde3; transition: all .12s; }
+  .opt:hover { border-color: var(--cyan); color: var(--cyan); }
+  .opt.on { border-color: var(--cyan); color: #062a33; background: var(--cyan); box-shadow: 0 0 10px rgba(0, 229, 255, .4); font-weight: 600; }
   .dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: #e3ddd5; cursor: pointer; }
-  .dot.on { background: #b08d57; }
+  .dot { width: 7px; height: 7px; background: var(--line); cursor: pointer; transform: rotate(45deg); }
+  .dot.on { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
   .ops { margin-top: 12px; display: flex; gap: 10px; }
-  button { flex: 1; padding: 9px 0; border-radius: 6px; font-size: 14px; cursor: pointer; border: 1px solid #b08d57; font-family: inherit; }
-  #reroll { background: #fff; color: #8a6a35; }
-  #confirm { background: #8a6a35; color: #fff; }
-  #confirm:disabled { opacity: .6; cursor: default; }
-  .tip { font-size: 11px; color: #a08c6a; margin-top: 8px; min-height: 14px; line-height: 1.6; }
-  .empty { font-size: 12px; color: #a08c6a; padding: 14px 0; text-align: center; }
+  button { flex: 1; padding: 9px 0; font-size: 13px; cursor: pointer; font-family: inherit; letter-spacing: 2px; border: 1px solid var(--cyan-line); background: var(--cyan-soft); color: var(--cyan); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+  button:hover { box-shadow: 0 0 14px rgba(0, 229, 255, .35); }
+  #confirm { border-color: var(--magenta-line); background: rgba(255, 45, 120, .14); color: var(--magenta); }
+  #confirm:hover { box-shadow: 0 0 14px rgba(255, 45, 120, .4); }
+  #confirm:disabled { opacity: .5; cursor: default; box-shadow: none; }
+  .tip { font-size: 11px; color: var(--muted); margin-top: 8px; min-height: 14px; line-height: 1.7; }
+  .empty { font-size: 12px; color: var(--muted); padding: 14px 0; text-align: center; font-family: var(--mono); }
 
   /* ---------- 她带的人（多人登场） ---------- */
-  .mates { margin-top: 6px; border: 1px dashed #c9beb0; border-radius: 6px; padding: 6px 8px; background: #fdfaf4; }
-  .mates .ttl { font-size: 11px; color: #999; margin-bottom: 5px; line-height: 1.5; }
-  .rel { display: inline-block; padding: 2px 9px; margin: 0 4px 4px 0; font-size: 11px; border: 1px solid #d8cfc4; border-radius: 10px; background: #fff; cursor: pointer; color: #6b5f52; }
-  .rel:hover { border-color: #b08d57; color: #8a6a35; }
-  .rel.on { border-color: #a35b5b; color: #a35b5b; background: #faf0f0; }
-  .rel.off { opacity: .45; cursor: not-allowed; }
-  .rel .why { display: block; font-size: 10px; color: #b08d57; }
-  .solo { margin-top: 8px; padding: 6px 0; font-size: 12px; text-align: center; border: 1px solid #a35b5b; border-radius: 6px; background: #fff; color: #a35b5b; cursor: pointer; }
-  .solo:hover { background: #faf0f0; }
+  .mates { margin-top: 6px; border: 1px dashed var(--magenta-line); padding: 6px 8px; background: rgba(255, 45, 120, .05); }
+  .mates .ttl { font-size: 10px; color: var(--muted); margin-bottom: 5px; line-height: 1.6; }
+  .rel { display: inline-block; padding: 2px 9px; margin: 0 5px 5px 0; font-size: 11px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; color: #a9bde3; }
+  .rel:hover { border-color: var(--magenta); color: var(--magenta); }
+  .rel.on { border-color: var(--magenta); color: var(--magenta); background: rgba(255, 45, 120, .15); box-shadow: 0 0 8px rgba(255, 45, 120, .25); }
+  .rel.off { opacity: .4; cursor: not-allowed; }
+  .rel .why { display: block; font-size: 9px; color: var(--yellow); }
+  .solo { margin-top: 8px; padding: 6px 0; font-size: 12px; text-align: center; border: 1px solid var(--magenta-line); color: var(--magenta); background: rgba(255, 45, 120, .08); cursor: pointer; letter-spacing: 1px; }
+  .solo:hover { background: rgba(255, 45, 120, .2); box-shadow: 0 0 12px rgba(255, 45, 120, .3); }
 
   /* ---------- 人物记录 ---------- */
   .list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .tab { padding: 4px 12px; border: 1px solid #d8cfc4; border-radius: 14px; font-size: 12px; background: #fff; cursor: pointer; color: #6b5f52; }
-  .tab.on { border-color: #8a6a35; color: #8a6a35; background: #f7efe2; }
-  .tab .cur { color: #a35b5b; font-size: 10px; margin-left: 3px; }
-  .profile { border: 1px solid #e3ddd5; border-radius: 8px; background: #fff; }
+  .tab { padding: 3px 12px; border: 1px solid var(--line); font-size: 12px; background: var(--panel2); cursor: pointer; color: #a9bde3; clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+  .tab.on { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-soft); box-shadow: 0 0 8px rgba(0, 229, 255, .25); }
+  .tab .cur { color: var(--yellow); font-size: 9px; margin-left: 4px; font-family: var(--mono); }
+  .profile { border: 1px solid var(--line); background: var(--panel); }
   .psum { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 12px; cursor: pointer; user-select: none; }
-  .psum:hover { background: #fdfaf4; }
-  .pname { font-size: 15px; font-weight: 600; }
-  .pstage { font-size: 11px; color: #a08c6a; }
-  .pbrief { font-size: 11px; color: #8a8a8a; }
-  .pexpand { margin-left: auto; font-size: 11px; color: #8a6a35; }
-  .pdetail { display: none; padding: 4px 12px 12px; border-top: 1px dashed #efe8dd; }
+  .psum:hover { background: var(--panel2); }
+  .pname { font-size: 14px; font-weight: 700; color: #fff; }
+  .pstage { font-size: 10px; color: var(--cyan); border: 1px solid var(--cyan-line); padding: 0 6px; line-height: 14px; }
+  .pbrief { font-size: 11px; color: var(--muted); }
+  .pexpand { margin-left: auto; font-size: 11px; color: var(--cyan); }
+  .pdetail { display: none; padding: 4px 12px 12px; border-top: 1px dashed var(--line); }
   .pdetail.open { display: block; }
-  .rbar { margin: 6px 0; }
-  .rbar .lab { display: flex; justify-content: space-between; font-size: 11px; color: #8a6a35; }
-  .rbar .track { height: 6px; border-radius: 3px; background: #efe8dd; margin-top: 2px; }
-  .rbar .fill { height: 6px; border-radius: 3px; background: #b08d57; }
-  .rbar .fill.lust { background: #a35b5b; }
+  .rbar { margin: 7px 0; }
+  .rbar .lab { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .rbar .track { height: 6px; background: #0a1322; border: 1px solid var(--line); margin-top: 2px; }
+  .rbar .fill { height: 100%; background: linear-gradient(90deg, #007b9e, var(--cyan)); box-shadow: 0 0 8px rgba(0, 229, 255, .5); }
+  .rbar .fill.lust { background: linear-gradient(90deg, #8a1140, var(--magenta)); box-shadow: 0 0 8px rgba(255, 45, 120, .5); }
   .log { margin-top: 12px; }
-  .log .lt { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-  .logItem { font-size: 12px; line-height: 1.6; color: #555; border-left: 2px solid #e3ddd5; padding: 2px 0 2px 8px; margin-bottom: 5px; }
-  .logItem .d { color: #a08c6a; margin-right: 6px; }
-  .logItem .s { color: #8a8a8a; margin-right: 6px; }
-  .targetbtn { display: inline-block; margin-top: 8px; padding: 5px 14px; font-size: 12px; border: 1px solid #a35b5b; border-radius: 12px; color: #a35b5b; background: #fff; cursor: pointer; }
-  .targetbtn:hover { background: #faf0f0; }
-  .copybox { margin-top: 8px; font-size: 12px; line-height: 1.7; color: #555; border: 1px dashed #c9beb0; border-radius: 6px; padding: 8px 10px; background: #fdfaf4; white-space: pre-wrap; user-select: all; }
+  .log .lt { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #9fb9e8; letter-spacing: 2px; font-family: var(--mono); }
+  .logItem { font-size: 11px; line-height: 1.7; color: #a9bde3; border-left: 2px solid var(--cyan-line); padding: 2px 0 2px 8px; margin-bottom: 5px; }
+  .logItem .d { color: var(--cyan); margin-right: 6px; font-family: var(--mono); font-size: 10px; }
+  .logItem .s { color: var(--muted); margin-right: 6px; }
+  .targetbtn { display: inline-block; margin-top: 8px; padding: 5px 14px; font-size: 12px; border: 1px solid var(--magenta-line); color: var(--magenta); background: rgba(255, 45, 120, .08); cursor: pointer; letter-spacing: 1px; }
+  .targetbtn:hover { background: rgba(255, 45, 120, .2); box-shadow: 0 0 10px rgba(255, 45, 120, .3); }
+  .copybox { margin-top: 8px; font-size: 12px; line-height: 1.7; color: #a9bde3; border: 1px dashed var(--cyan-line); padding: 8px 10px; background: rgba(0, 229, 255, .05); white-space: pre-wrap; user-select: all; }
 </style>
 </head>
 <body>
@@ -103,39 +177,59 @@
 
   <!-- 生成器模式：开场白只显示这一块（一次只出现一位，左右切换） -->
   <div id="genMode" style="display:none">
-    <div class="hd">沐心堂 · 选人</div>
+    <div class="hd">沐心堂 · 选人<span class="sys">SYS · ONLINE</span></div>
     <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁）· 每位可单独入池，只覆盖那一个</div>
     <div id="genSel"></div>
   </div>
 
   <!-- 状态栏模式：紧凑栏 + 两个折叠面板 -->
   <div id="barMode" style="display:none">
-    <div class="line">
-      <span class="meta" id="date">--</span>
-      <span class="meta" id="time">--</span>
-      <span class="meta" id="scene">--</span>
-      <span class="phase" id="phase">--</span>
+    <div class="meta-line">
+      <span class="mono" id="date">--</span><span class="sep">//</span>
+      <span class="mono" id="time">--</span><span class="sep">//</span>
+      <span id="scene">--</span>
+      <span class="phase-tag" id="phase">--</span>
     </div>
-    <div class="line" style="margin-top:3px;">
-      <span class="meta">当前女主</span>
-      <span class="hero" id="hero">未定</span>
-      <span class="meta" id="stage"></span>
+    <div class="hero-line">
+      <span class="hero-lab">当前目标</span>
+      <span class="hero-name" id="hero">未定</span>
+      <span class="stage-tag" id="stage"></span>
       <span class="switchbtn" id="switchBtn">切换目标</span>
     </div>
-    <div class="bars">
-      <div class="bar"><div class="lab"><span>好感度</span><span id="affNum">0</span></div><div class="track"><div class="fill" id="affFill" style="width:0%"></div></div></div>
-      <div class="bar"><div class="lab"><span>性欲</span><span id="lustNum">0</span></div><div class="track"><div class="fill lust" id="lustFill" style="width:0%"></div></div></div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-lab">身份</div><div class="stat-val" id="vIdent">--</div></div>
+      <div class="stat"><div class="stat-lab">年龄</div><div class="stat-val mono" id="vAge">--</div></div>
+      <div class="stat"><div class="stat-lab">身材</div><div class="stat-val" id="vBody">--</div></div>
+      <div class="stat stat-kinks"><div class="stat-lab">性癖</div><div class="stat-val" id="vKinks">--</div></div>
+    </div>
+    <div class="block mind-block">
+      <div class="block-lab">心理活动 <span class="mono mut">// INNER MONOLOG</span></div>
+      <div class="block-txt" id="mindText">--</div>
+    </div>
+    <div class="block body-block">
+      <div class="block-lab">身体状态 <span class="mono mut">// BODY</span><span class="lust-badge" id="bodyBadge" style="display:none">性欲≥60 · 露骨解锁</span></div>
+      <div class="block-txt" id="bodyText">--</div>
+    </div>
+    <div class="val-row">
+      <div class="val-lab">好感度</div>
+      <div class="val-track"><div class="val-fill aff" id="affFill" style="width:0%"></div></div>
+      <div class="val-num mono" id="affNum">0</div>
+    </div>
+    <div class="val-row">
+      <div class="val-lab">性欲</div>
+      <div class="val-track"><div class="val-fill lust" id="lustFill" style="width:0%"></div></div>
+      <div class="val-num mono" id="lustNum">0</div>
     </div>
 
     <div class="panel">
-      <div class="phead" id="headSel">▸ 人物选择器</div>
+      <div class="phead" id="headSel">人物选择器</div>
       <div class="pbody" id="bodySel" style="display:none">
         <div id="barSel"></div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="phead" id="headRec">▸ 人物记录</div>
+      <div class="phead" id="headRec">人物记录</div>
       <div class="pbody" id="bodyRec" style="display:none">
         <div id="recBody"></div>
       </div>
@@ -421,7 +515,7 @@
     html += '<div class="row" style="margin-top:5px">' +
       (h.mates.length
         ? ('已选：' + h.mates.map(function (m) { return '<span class="chip">' + esc(m.rel) + ' · ' + m.age + '岁</span>'; }).join(''))
-        : '<span style="color:#a08c6a">还没选。不选就是她一个人来。</span>') +
+        : '<span class="mut" style="font-size:11px">还没选。不选就是她一个人来。</span>') +
       '</div></div>';
     return html;
   }
@@ -594,7 +688,10 @@
         : [],
       // 单人更新保留她的进度；新入池从 5/5 起步
       '好感度': (existing && typeof existing['好感度'] === 'number') ? existing['好感度'] : 5,
-      '性欲': (existing && typeof existing['性欲'] === 'number') ? existing['性欲'] : 5
+      '性欲': (existing && typeof existing['性欲'] === 'number') ? existing['性欲'] : 5,
+      // 心理想法/身体状态留给 AI 在首轮互动后补写
+      '心理想法': '',
+      '身体状态': ''
     };
   }
   function buildHarem() {
@@ -696,9 +793,11 @@
       '身材：' + (h['身材'] || ''),
       '性格：外 ' + (h['外在性格'] || '') + ' × 内 ' + (h['内在性格'] || ''),
       '已解锁性癖：' + (kinks.length ? kinks.join('、') : '尚未解锁'),
-      '好感度 ' + (h['好感度'] || 0) + '（' + stageOf(h['好感度'] || 0) + '）· 性欲 ' + (h['性欲'] || 0),
-      '预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人')
+      '好感度 ' + (h['好感度'] || 0) + '（' + stageOf(h['好感度'] || 0) + '）· 性欲 ' + (h['性欲'] || 0)
     ];
+    if (h['心理想法']) lines.push('她当下的念头：' + h['心理想法']);
+    if (h['身体状态']) lines.push('她当下的状态：' + h['身体状态']);
+    lines.push('预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人'));
     if (matesTextRec(h)) lines.push('偕同：' + matesTextRec(h).replace(/^，/, ''));
     lines.push('当前：' + pget(stat, '世界.当前日期', '') + ' ' + pget(stat, '世界.当前时间段', '') + ' · ' + pget(stat, '世界.当前场景', ''));
     lines.push('接下来以她为目标。');
@@ -799,13 +898,43 @@
       var h = (pget(stat, '后宫', {}) || {})[name];
       if (h) {
         var aff = h['好感度'] || 0;
+        var lust = h['性欲'] || 0;
         $('stage').textContent = stageOf(aff);
         setBar($('affNum'), $('affFill'), aff);
-        setBar($('lustNum'), $('lustFill'), h['性欲'] || 0);
+        setBar($('lustNum'), $('lustFill'), lust);
+        // 身份 / 年龄 / 身材 / 性癖（一行四格）
+        $('vIdent').textContent = h['身份'] || '--';
+        $('vAge').textContent = (h['年龄'] ? h['年龄'] + ' 岁' : '--');
+        $('vBody').textContent = h['身材'] || '--';
+        var ks = h['性癖'] || [];
+        $('vKinks').innerHTML = ks.length
+          ? (ks.slice(0, 3).map(function (k) { return '<span class="kchip">' + esc(k) + '</span>'; }).join('') +
+            (ks.length > 3 ? '<span class="kchip more">+' + (ks.length - 3) + '</span>' : ''))
+          : '<span class="mut" style="font-size:11px">尚未解锁</span>';
+        // 心理想法（第一人称内心独白，单独一行）
+        var mind = String(h['心理想法'] || '').trim();
+        var mt = $('mindText');
+        mt.textContent = mind ? '「' + mind + '」' : '—— 她心里还没有留下记录';
+        mt.classList.toggle('empty', !mind);
+        // 身体状态（身体与服装；性欲≥60 才出现小穴/胸的描写）
+        var bodyS = String(h['身体状态'] || '').trim();
+        var bt = $('bodyText');
+        bt.textContent = bodyS || '—— 尚无记录';
+        bt.classList.toggle('empty', !bodyS);
+        $('bodyBadge').style.display = lust >= 60 ? 'inline-block' : 'none';
       } else {
         $('stage').textContent = '';
         setBar($('affNum'), $('affFill'), 0);
         setBar($('lustNum'), $('lustFill'), 0);
+        $('vIdent').textContent = '--';
+        $('vAge').textContent = '--';
+        $('vBody').textContent = '--';
+        $('vKinks').innerHTML = '<span class="mut" style="font-size:11px">--</span>';
+        $('mindText').textContent = '--';
+        $('mindText').classList.add('empty');
+        $('bodyText').textContent = '--';
+        $('bodyText').classList.add('empty');
+        $('bodyBadge').style.display = 'none';
       }
     });
   }
@@ -833,9 +962,12 @@
       var h = harem[rec.current] || {};
       var kinks = h['性癖'] || [];
       var aff = h['好感度'] || 0;
+      var lust = h['性欲'] || 0;
       var isOpen = !!rec.expanded[rec.current];
       var brief = esc((h['身份'] || '')) + ' · ' + esc(h['预约类型'] || '到店') + ' · 下次预约 ' + esc(h['下次预约时间'] || '待定');
       var mates = h['同伴'] || [];
+      var mind = String(h['心理想法'] || '').trim();
+      var bodyS = String(h['身体状态'] || '').trim();
       html += '<div class="profile">' +
         '<div class="psum" data-act="toggle">' +
         '<span class="pname">' + esc(rec.current) + '</span>' +
@@ -852,7 +984,9 @@
           ? ('<div class="row"><b>她带的人</b> · ' + mates.map(function (m) { return esc(m['关系']) + '（' + esc(m['年龄']) + '岁）'; }).join('、') + '</div>')
           : '') +
         '<div class="rbar"><div class="lab"><span>好感度</span><span>' + aff + ' / 100</span></div><div class="track"><div class="fill" style="width:' + Math.max(0, Math.min(100, aff)) + '%"></div></div></div>' +
-        '<div class="rbar"><div class="lab"><span>性欲</span><span>' + (h['性欲'] || 0) + ' / 100</span></div><div class="track"><div class="fill lust" style="width:' + Math.max(0, Math.min(100, h['性欲'] || 0)) + '%"></div></div></div>' +
+        '<div class="rbar"><div class="lab"><span>性欲</span><span>' + lust + ' / 100' + (lust >= 60 ? ' · 露骨已解锁' : '') + '</span></div><div class="track"><div class="fill lust" style="width:' + Math.max(0, Math.min(100, lust)) + '%"></div></div></div>' +
+        '<div class="row"><b>心理想法</b> · ' + (mind ? '「' + esc(mind) + '」' : '<span class="mut">尚无记录</span>') + '</div>' +
+        '<div class="row"><b>身体状态</b> · ' + (bodyS ? esc(bodyS) : '<span class="mut">尚无记录</span>') + '</div>' +
         '<div class="row kinks"><b>已解锁性癖</b></div><div>' +
         (kinks.length ? kinks.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('') : '<span class="chip">尚未解锁</span>') +
         '</div>' +
@@ -873,7 +1007,10 @@
       box.innerHTML = html;
     });
   }
+  var recBound = false;
   function bindRec() {
+    if (recBound) return;
+    recBound = true;
     var box = $('recBody');
     if (!box) return;
     box.addEventListener('click', function (e) {
@@ -897,19 +1034,22 @@
   }
 
   // ---------- 面板折叠 ----------
+  var panelsBound = false;
   function bindPanels() {
+    if (panelsBound) return;
+    panelsBound = true;
     $('headSel').addEventListener('click', function () {
       var body = $('bodySel'), head = $('headSel');
       var open = body.style.display !== 'none';
       body.style.display = open ? 'none' : 'block';
-      head.textContent = (open ? '▸' : '▾') + ' 人物选择器';
+      head.classList.toggle('open', !open);
       if (!open) selInit();
     });
     $('headRec').addEventListener('click', function () {
       var body = $('bodyRec'), head = $('headRec');
       var open = body.style.display !== 'none';
       body.style.display = open ? 'none' : 'block';
-      head.textContent = (open ? '▸' : '▾') + ' 人物记录';
+      head.classList.toggle('open', !open);
       rec.open = !open;
       if (!open) recRender();
     });
@@ -917,7 +1057,7 @@
       var body = $('bodyRec');
       if (body.style.display === 'none') {
         body.style.display = 'block';
-        $('headRec').textContent = '▾ 人物记录';
+        $('headRec').classList.add('open');
         rec.open = true;
         recRender();
       }
