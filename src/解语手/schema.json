@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "default": {},
+  "type": "object",
+  "properties": {
+    "系统": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "口碑": {
+          "default": 0,
+          "type": "number"
+        },
+        "店内": {
+          "default": "",
+          "type": "string"
+        },
+        "店内客人": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "主角": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "手法": {
+          "default": "",
+          "type": "string"
+        }
+      }
+    },
+    "当前客人": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "姓名": {
+          "default": "",
+          "type": "string"
+        },
+        "年龄": {
+          "default": 0,
+          "type": "number"
+        },
+        "职业": {
+          "default": "",
+          "type": "string"
+        },
+        "身份": {
+          "default": "",
+          "type": "string"
+        },
+        "婚配": {
+          "default": "",
+          "type": "string"
+        },
+        "形貌": {
+          "default": "",
+          "type": "string"
+        },
+        "身体状态": {
+          "default": "",
+          "type": "string"
+        },
+        "心理": {
+          "default": "",
+          "type": "string"
+        },
+        "好感度": {
+          "default": 0,
+          "type": "number"
+        },
+        "性欲": {
+          "default": 0,
+          "type": "number"
+        },
+        "信任度": {
+          "default": 0,
+          "type": "number"
+        },
+        "敏感点": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "default": 0,
+            "type": "number"
+          }
+        },
+        "性癖": {
+          "default": "",
+          "type": "string"
+        },
+        "性经历": {
+          "default": "",
+          "type": "string"
+        },
+        "来路": {
+          "default": "自己预约",
+          "type": "string",
+          "enum": [
+            "自己预约",
+            "熟人引荐"
+          ]
+        },
+        "引荐人": {
+          "default": "",
+          "type": "string"
+        },
+        "知情": {
+          "default": false,
+          "type": "boolean"
+        },
+        "来访次数": {
+          "default": 0,
+          "type": "number"
+        },
+        "关系阶段": {
+          "default": "初次来访",
+          "type": "string",
+          "enum": [
+            "初次来访",
+            "熟客",
+            "心事将开",
+            "半推半就",
+            "已成云雨",
+            "情人"
+          ]
+        },
+        "已得手": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

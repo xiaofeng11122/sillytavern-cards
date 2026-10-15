@@ -47,7 +47,7 @@
           "default": "",
           "type": "string"
         },
-        "身材": {
+        "形貌": {
           "default": "",
           "type": "string"
         },
