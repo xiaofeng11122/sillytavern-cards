@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>沐心堂·状态栏</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; color: #2b2b2b; background: #fffdf8; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 8px 12px 12px; }
+  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; }
+  .meta { color: #8a8a8a; }
+  .hero { font-weight: 600; font-size: 13px; }
+  .phase { color: #a08c6a; }
+  .switchbtn { font-size: 11px; color: #8a6a35; border: 1px solid #d8cfc4; border-radius: 10px; padding: 1px 9px; cursor: pointer; background: #fff; }
+  .switchbtn:hover { border-color: #b08d57; background: #f7efe2; }
+  .bars { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; }
+  .bar { flex: 1 1 160px; }
+  .bar .lab { display: flex; justify-content: space-between; font-size: 10px; color: #8a6a35; }
+  .bar .track { height: 5px; border-radius: 3px; background: #efe8dd; margin-top: 1px; }
+  .bar .fill { height: 5px; border-radius: 3px; background: #b08d57; }
+  .bar .fill.lust { background: #a35b5b; }
+  .panel { margin-top: 8px; border: 1px solid #e3ddd5; border-radius: 8px; background: #fff; overflow: hidden; }
+  .phead { padding: 7px 12px; font-size: 12px; font-weight: 600; color: #6b5f52; cursor: pointer; background: #faf6ef; user-select: none; }
+  .phead:hover { color: #8a6a35; }
+  .pbody { padding: 10px 12px 12px; border-top: 1px solid #efe8dd; }
+  .hd { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
+  .sub { font-size: 12px; color: #8a8a8a; margin: 4px 0 10px; line-height: 1.6; }
+
+  /* ---------- 单人轮播生成器 ---------- */
+  .carousel { position: relative; display: flex; align-items: stretch; gap: 6px; }
+  .arrow { flex: 0 0 34px; border: 1px solid #d8cfc4; border-radius: 8px; background: #fff; color: #8a6a35; font-size: 18px; cursor: pointer; }
+  .arrow:hover { border-color: #b08d57; background: #f7efe2; }
+  .arrow:disabled { opacity: .35; cursor: default; }
+  .stage { flex: 1 1 auto; min-width: 0; }
+  .card { border: 1px solid #e3ddd5; border-radius: 8px; padding: 10px 12px; background: #ffffff; }
+  .nm { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .nm .age { font-weight: 400; color: #999; font-size: 12px; margin-left: 4px; }
+  .row { font-size: 12px; line-height: 1.6; margin: 3px 0; color: #555; }
+  .row b { color: #2b2b2b; font-weight: 500; }
+  .dim { cursor: pointer; border-bottom: 1px dashed #c9beb0; }
+  .dim:hover { color: #8a6a35; border-bottom-color: #8a6a35; }
+  .kinks { margin-top: 2px; }
+  .chip { display: inline-block; padding: 1px 7px; margin: 2px 3px 2px 0; border: 1px solid #d8cfc4; border-radius: 10px; font-size: 11px; color: #6b5f52; background: #fff; }
+  .picker { margin-top: 6px; border: 1px dashed #c9beb0; border-radius: 6px; padding: 6px; background: #fdfaf4; }
+  .picker .ttl { font-size: 11px; color: #999; margin-bottom: 4px; }
+  .opt { display: inline-block; padding: 2px 8px; margin: 0 4px 4px 0; font-size: 11px; border: 1px solid #d8cfc4; border-radius: 10px; background: #fff; cursor: pointer; color: #6b5f52; }
+  .opt:hover { border-color: #b08d57; color: #8a6a35; }
+  .opt.on { border-color: #8a6a35; color: #8a6a35; background: #f7efe2; }
+  .dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #e3ddd5; cursor: pointer; }
+  .dot.on { background: #b08d57; }
+  .ops { margin-top: 12px; display: flex; gap: 10px; }
+  button { flex: 1; padding: 9px 0; border-radius: 6px; font-size: 14px; cursor: pointer; border: 1px solid #b08d57; font-family: inherit; }
+  #reroll { background: #fff; color: #8a6a35; }
+  #confirm { background: #8a6a35; color: #fff; }
+  #confirm:disabled { opacity: .6; cursor: default; }
+  .tip { font-size: 11px; color: #a08c6a; margin-top: 8px; min-height: 14px; }
+  .empty { font-size: 12px; color: #a08c6a; padding: 14px 0; text-align: center; }
+
+  /* ---------- 人物记录 ---------- */
+  .list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tab { padding: 4px 12px; border: 1px solid #d8cfc4; border-radius: 14px; font-size: 12px; background: #fff; cursor: pointer; color: #6b5f52; }
+  .tab.on { border-color: #8a6a35; color: #8a6a35; background: #f7efe2; }
+  .tab .cur { color: #a35b5b; font-size: 10px; margin-left: 3px; }
+  .profile { border: 1px solid #e3ddd5; border-radius: 8px; background: #fff; }
+  .psum { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 12px; cursor: pointer; user-select: none; }
+  .psum:hover { background: #fdfaf4; }
+  .pname { font-size: 15px; font-weight: 600; }
+  .pstage { font-size: 11px; color: #a08c6a; }
+  .pbrief { font-size: 11px; color: #8a8a8a; }
+  .pexpand { margin-left: auto; font-size: 11px; color: #8a6a35; }
+  .pdetail { display: none; padding: 4px 12px 12px; border-top: 1px dashed #efe8dd; }
+  .pdetail.open { display: block; }
+  .rbar { margin: 6px 0; }
+  .rbar .lab { display: flex; justify-content: space-between; font-size: 11px; color: #8a6a35; }
+  .rbar .track { height: 6px; border-radius: 3px; background: #efe8dd; margin-top: 2px; }
+  .rbar .fill { height: 6px; border-radius: 3px; background: #b08d57; }
+  .rbar .fill.lust { background: #a35b5b; }
+  .log { margin-top: 12px; }
+  .log .lt { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .logItem { font-size: 12px; line-height: 1.6; color: #555; border-left: 2px solid #e3ddd5; padding: 2px 0 2px 8px; margin-bottom: 5px; }
+  .logItem .d { color: #a08c6a; margin-right: 6px; }
+  .logItem .s { color: #8a8a8a; margin-right: 6px; }
+  .targetbtn { display: inline-block; margin-top: 8px; padding: 5px 14px; font-size: 12px; border: 1px solid #a35b5b; border-radius: 12px; color: #a35b5b; background: #fff; cursor: pointer; }
+  .targetbtn:hover { background: #faf0f0; }
+  .copybox { margin-top: 8px; font-size: 12px; line-height: 1.7; color: #555; border: 1px dashed #c9beb0; border-radius: 6px; padding: 8px 10px; background: #fdfaf4; white-space: pre-wrap; user-select: all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 生成器模式：开场白只显示这一块（一次只出现一位，左右切换） -->
+  <div id="genMode" style="display:none">
+    <div class="hd">沐心堂 · 选人</div>
+    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 三位看妥后确认入池</div>
+    <div id="genSel"></div>
+  </div>
+
+  <!-- 状态栏模式：紧凑栏 + 两个折叠面板 -->
+  <div id="barMode" style="display:none">
+    <div class="line">
+      <span class="meta" id="date">--</span>
+      <span class="meta" id="time">--</span>
+      <span class="meta" id="scene">--</span>
+      <span class="phase" id="phase">--</span>
+    </div>
+    <div class="line" style="margin-top:3px;">
+      <span class="meta">当前女主</span>
+      <span class="hero" id="hero">未定</span>
+      <span class="meta" id="stage"></span>
+      <span class="switchbtn" id="switchBtn">切换目标</span>
+    </div>
+    <div class="bars">
+      <div class="bar"><div class="lab"><span>好感度</span><span id="affNum">0</span></div><div class="track"><div class="fill" id="affFill" style="width:0%"></div></div></div>
+      <div class="bar"><div class="lab"><span>性欲</span><span id="lustNum">0</span></div><div class="track"><div class="fill lust" id="lustFill" style="width:0%"></div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead" id="headSel">▸ 人物选择器</div>
+      <div class="pbody" id="bodySel" style="display:none">
+        <div id="barSel"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead" id="headRec">▸ 人物记录</div>
+      <div class="pbody" id="bodyRec" style="display:none">
+        <div id="recBody"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var MODE = 'bar';
+
+  // ---------- 运行环境判定与 API 桥接 ----------
+  // 直连：本页在消息楼层 iframe 内运行，酒馆助手已注入全局函数，直接调用。
+  // 桥接：本页以 srcdoc 形式常驻于输入栏上方（父页面容器），无全局函数，
+  //       全部调用经 postMessage 交给「当轮楼层执行器」（由启动器脚本在楼层 iframe 内代理）。
+  var BRIDGE = (typeof window.getVariables !== 'function' && typeof window.updateVariablesWith !== 'function');
+  var seq = 0, pending = {};
+
+  function thCall(fn, args) {
+    if (!BRIDGE) {
+      return Promise.resolve().then(function () {
+        var f = null;
+        try { f = window[fn]; } catch (e) {}
+        if (typeof f !== 'function' && window.TavernHelper) { try { f = window.TavernHelper[fn]; } catch (e2) {} }
+        if (typeof f !== 'function') throw new Error('当前环境缺少 ' + fn);
+        return f(args);
+      });
+    }
+    return new Promise(function (res, rej) {
+      var id = ++seq;
+      pending[id] = { res: res, rej: rej };
+      try { parent.postMessage({ source: 'mxt-frame', type: 'call', id: id, fn: fn, args: args }, '*'); } catch (e) { rej(e); }
+    });
+  }
+  function framePost(msg) {
+    try { parent.postMessage(msg, '*'); } catch (e) {}
+  }
+
+  window.addEventListener('message', function (e) {
+    var d = e.data || {};
+    if (!d || d.source !== 'mxt-host') return;
+    if (d.type === 'ret') {
+      var p = pending[d.id];
+      if (p) {
+        delete pending[d.id];
+        if (d.error) p.rej(new Error(d.error)); else p.res(d.result);
+      }
+      return;
+    }
+    if (d.type === 'mode') { switchMode(d.mode); return; }
+  });
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function pget(obj, path, def) {
+    if (!obj) return def;
+    var parts = String(path).split('.'), cur = obj;
+    for (var i = 0; i < parts.length; i++) {
+      if (cur == null || typeof cur !== 'object') return def;
+      cur = cur[parts[i]];
+    }
+    return (cur === undefined || cur === null) ? def : cur;
+  }
+  function pset(obj, path, val) {
+    var parts = String(path).split('.'), cur = obj;
+    for (var i = 0; i < parts.length - 1; i++) {
+      if (cur[parts[i]] == null || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+      cur = cur[parts[i]];
+    }
+    cur[parts[parts.length - 1]] = val;
+  }
+  function stageOf(v) {
+    if (v >= 80) return '沦陷期';
+    if (v >= 50) return '倾心期';
+    if (v >= 20) return '熟悉期';
+    return '初识期';
+  }
+  function setBar(numEl, fillEl, v) {
+    var val = (typeof v === 'number' && isFinite(v)) ? Math.max(0, Math.min(100, Math.round(v))) : 0;
+    numEl.textContent = val;
+    fillEl.style.width = val + '%';
+  }
+  function readStat() {
+    return thCall('getCurrentMessageId', undefined).then(function (id) {
+      var opt = { type: 'message' };
+      if (id !== undefined && id !== null) opt.message_id = id;
+      return thCall('getVariables', opt);
+    }).then(function (v) {
+      return pget(v, 'stat_data', null);
+    }).catch(function () { return null; });
+  }
+  function weighted(arr) {
+    // 池内前两项重复占位，体现身份对搭配的倾向性，其余等权
+    if (!arr || arr.length < 3) return arr ? arr.slice() : [];
+    return arr.slice(0, 2).concat(arr);
+  }
+
+  // ---------- 身份画像：每个身份自带年龄区间 / 身材池 / 外在×内在性格池 / 性癖池 ----------
+  var TYPES = {
+    '娱乐圈': ['圈内艺人', '网红主播', '过选秀艺人', '幕后妆造师', '女团成员', '短剧女主', '电竞女主播'],
+    '豪门圈': ['豪门名媛', '归国富家女', '豪门儿媳', '女老板', '企业高管', '千金小姐'],
+    '职场白领': ['项目主管', '财务专员', 'HR', '律所合伙人', '市场总监', '审计师', '空乘'],
+    '专业服务': ['医美顾问', '瑜伽教练', '私人厨师', '高定销售', '高中老师', '大学辅导员', '健身教练']
+  };
+  var TYPE_KEYS = Object.keys(TYPES);
+  var BODIES = ['娇小单薄', '高挑修长腰细腿长', '精瘦薄肌骨肉匀称', '身量适中温婉清秀', '丰腴饱满胸臀丰盈'];
+  var OUTER = ['高冷疏离', '温婉得体', '泼辣直接', '端庄自持', '娇纵任性'];
+  var INNER = ['倔强要强', '缺爱依赖', '掌控欲强', '外纯内欲', '野心勃勃'];
+  var KINKS = ['支配臣服', '言语羞辱', '束缚', '展示暴露', '身份扮演', '感官控制', '恋物', '渐进调教', '沉迷成瘾', '人妻', '多人场面', '轻度疼痛', '初次开发', '灌满感内射偏好', '连续高潮绝顶控制'];
+  var SUR = ['林', '苏', '沈', '顾', '陆', '江', '韩', '秦', '程', '叶', '许', '温', '楚', '纪', '岑'];
+  var GIV = ['晚', '栀', '汐', '娆', '矜', '糯', '凛', '嫣', '璇', '谧', '笙', '眠', '葵', '绮', '翎', '漱'];
+
+  // 画像字段：age=[最小,最大] bodies/outer/inner/kinks 均为带倾向的池（前两项高权重）
+  var PORTRAITS = {
+    '圈内艺人':   { age: [22, 32], bodies: ['高挑修长腰细腿长', '娇小单薄', '丰腴饱满胸臀丰盈'], outer: ['高冷疏离', '温婉得体', '娇纵任性'], inner: ['野心勃勃', '缺爱依赖', '倔强要强'], kinks: ['展示暴露', '身份扮演', '言语羞辱', '恋物', '支配臣服'] },
+    '网红主播':   { age: [20, 28], bodies: ['娇小单薄', '丰腴饱满胸臀丰盈', '身量适中温婉清秀'], outer: ['泼辣直接', '娇纵任性', '温婉得体'], inner: ['缺爱依赖', '野心勃勃', '掌控欲强'], kinks: ['展示暴露', '言语羞辱', '感官控制', '恋物', '沉迷成瘾'] },
+    '过选秀艺人': { age: [22, 30], bodies: ['精瘦薄肌骨肉匀称', '高挑修长腰细腿长', '娇小单薄'], outer: ['高冷疏离', '泼辣直接', '温婉得体'], inner: ['倔强要强', '野心勃勃', '缺爱依赖'], kinks: ['支配臣服', '渐进调教', '轻度疼痛', '初次开发', '言语羞辱'] },
+    '幕后妆造师': { age: [24, 38], bodies: ['身量适中温婉清秀', '娇小单薄', '高挑修长腰细腿长'], outer: ['温婉得体', '高冷疏离', '端庄自持'], inner: ['缺爱依赖', '外纯内欲', '倔强要强'], kinks: ['恋物', '感官控制', '渐进调教', '展示暴露', '初次开发'] },
+    '女团成员':   { age: [20, 26], bodies: ['娇小单薄', '精瘦薄肌骨肉匀称', '高挑修长腰细腿长'], outer: ['娇纵任性', '泼辣直接', '高冷疏离'], inner: ['掌控欲强', '野心勃勃', '缺爱依赖'], kinks: ['支配臣服', '身份扮演', '展示暴露', '轻度疼痛', '连续高潮绝顶控制'] },
+    '短剧女主':   { age: [20, 30], bodies: ['娇小单薄', '丰腴饱满胸臀丰盈', '身量适中温婉清秀'], outer: ['温婉得体', '端庄自持', '泼辣直接'], inner: ['外纯内欲', '野心勃勃', '倔强要强'], kinks: ['身份扮演', '初次开发', '灌满感内射偏好', '言语羞辱', '沉迷成瘾'] },
+    '电竞女主播': { age: [20, 28], bodies: ['娇小单薄', '精瘦薄肌骨肉匀称', '身量适中温婉清秀'], outer: ['泼辣直接', '高冷疏离', '娇纵任性'], inner: ['倔强要强', '掌控欲强', '野心勃勃'], kinks: ['言语羞辱', '支配臣服', '轻度疼痛', '连续高潮绝顶控制', '渐进调教'] },
+    '豪门名媛':   { age: [24, 34], bodies: ['高挑修长腰细腿长', '身量适中温婉清秀', '娇小单薄'], outer: ['温婉得体', '高冷疏离', '端庄自持'], inner: ['掌控欲强', '野心勃勃', '外纯内欲'], kinks: ['恋物', '展示暴露', '身份扮演', '支配臣服', '连续高潮绝顶控制'] },
+    '归国富家女': { age: [23, 32], bodies: ['高挑修长腰细腿长', '精瘦薄肌骨肉匀称', '丰腴饱满胸臀丰盈'], outer: ['泼辣直接', '娇纵任性', '高冷疏离'], inner: ['野心勃勃', '掌控欲强', '倔强要强'], kinks: ['支配臣服', '轻度疼痛', '灌满感内射偏好', '展示暴露', '多人场面'] },
+    '豪门儿媳':   { age: [26, 40], bodies: ['丰腴饱满胸臀丰盈', '身量适中温婉清秀', '高挑修长腰细腿长'], outer: ['端庄自持', '温婉得体', '高冷疏离'], inner: ['外纯内欲', '缺爱依赖', '野心勃勃'], kinks: ['人妻', '展示暴露', '束缚', '灌满感内射偏好', '连续高潮绝顶控制'] },
+    '女老板':     { age: [28, 42], bodies: ['高挑修长腰细腿长', '身量适中温婉清秀', '精瘦薄肌骨肉匀称'], outer: ['高冷疏离', '端庄自持', '泼辣直接'], inner: ['掌控欲强', '野心勃勃', '倔强要强'], kinks: ['支配臣服', '言语羞辱', '身份扮演', '轻度疼痛', '连续高潮绝顶控制'] },
+    '企业高管':   { age: [28, 42], bodies: ['高挑修长腰细腿长', '身量适中温婉清秀', '精瘦薄肌骨肉匀称'], outer: ['高冷疏离', '端庄自持', '温婉得体'], inner: ['掌控欲强', '野心勃勃', '倔强要强'], kinks: ['支配臣服', '言语羞辱', '束缚', '身份扮演', '轻度疼痛'] },
+    '千金小姐':   { age: [22, 30], bodies: ['娇小单薄', '身量适中温婉清秀', '丰腴饱满胸臀丰盈'], outer: ['娇纵任性', '温婉得体', '高冷疏离'], inner: ['缺爱依赖', '掌控欲强', '外纯内欲'], kinks: ['恋物', '轻度疼痛', '初次开发', '支配臣服', '沉迷成瘾'] },
+    '项目主管':   { age: [25, 36], bodies: ['身量适中温婉清秀', '高挑修长腰细腿长', '精瘦薄肌骨肉匀称'], outer: ['温婉得体', '泼辣直接', '高冷疏离'], inner: ['倔强要强', '掌控欲强', '野心勃勃'], kinks: ['渐进调教', '支配臣服', '轻度疼痛', '连续高潮绝顶控制', '束缚'] },
+    '财务专员':   { age: [24, 36], bodies: ['娇小单薄', '身量适中温婉清秀', '精瘦薄肌骨肉匀称'], outer: ['温婉得体', '端庄自持', '高冷疏离'], inner: ['倔强要强', '外纯内欲', '缺爱依赖'], kinks: ['束缚', '感官控制', '渐进调教', '灌满感内射偏好', '初次开发'] },
+    'HR':         { age: [26, 38], bodies: ['身量适中温婉清秀', '娇小单薄', '丰腴饱满胸臀丰盈'], outer: ['温婉得体', '泼辣直接', '端庄自持'], inner: ['掌控欲强', '缺爱依赖', '外纯内欲'], kinks: ['身份扮演', '言语羞辱', '支配臣服', '展示暴露', '渐进调教'] },
+    '律所合伙人': { age: [28, 42], bodies: ['高挑修长腰细腿长', '身量适中温婉清秀', '精瘦薄肌骨肉匀称'], outer: ['高冷疏离', '端庄自持', '泼辣直接'], inner: ['掌控欲强', '倔强要强', '野心勃勃'], kinks: ['支配臣服', '言语羞辱', '轻度疼痛', '束缚', '连续高潮绝顶控制'] },
+    '市场总监':   { age: [27, 40], bodies: ['高挑修长腰细腿长', '丰腴饱满胸臀丰盈', '身量适中温婉清秀'], outer: ['泼辣直接', '温婉得体', '高冷疏离'], inner: ['野心勃勃', '掌控欲强', '外纯内欲'], kinks: ['展示暴露', '身份扮演', '支配臣服', '多人场面', '灌满感内射偏好'] },
+    '审计师':     { age: [25, 38], bodies: ['娇小单薄', '身量适中温婉清秀', '精瘦薄肌骨肉匀称'], outer: ['端庄自持', '高冷疏离', '温婉得体'], inner: ['倔强要强', '外纯内欲', '掌控欲强'], kinks: ['束缚', '感官控制', '渐进调教', '灌满感内射偏好', '连续高潮绝顶控制'] },
+    '空乘':       { age: [22, 34], bodies: ['高挑修长腰细腿长', '娇小单薄', '身量适中温婉清秀'], outer: ['温婉得体', '端庄自持', '高冷疏离'], inner: ['缺爱依赖', '外纯内欲', '倔强要强'], kinks: ['身份扮演', '束缚', '展示暴露', '灌满感内射偏好', '初次开发'] },
+    '医美顾问':   { age: [23, 36], bodies: ['娇小单薄', '丰腴饱满胸臀丰盈', '身量适中温婉清秀'], outer: ['温婉得体', '娇纵任性', '泼辣直接'], inner: ['野心勃勃', '缺爱依赖', '掌控欲强'], kinks: ['展示暴露', '恋物', '感官控制', '灌满感内射偏好', '轻度疼痛'] },
+    '瑜伽教练':   { age: [22, 34], bodies: ['精瘦薄肌骨肉匀称', '高挑修长腰细腿长', '身量适中温婉清秀'], outer: ['温婉得体', '高冷疏离', '泼辣直接'], inner: ['外纯内欲', '掌控欲强', '倔强要强'], kinks: ['感官控制', '束缚', '连续高潮绝顶控制', '展示暴露', '支配臣服'] },
+    '私人厨师':   { age: [24, 40], bodies: ['丰腴饱满胸臀丰盈', '身量适中温婉清秀', '娇小单薄'], outer: ['温婉得体', '泼辣直接', '端庄自持'], inner: ['缺爱依赖', '外纯内欲', '倔强要强'], kinks: ['恋物', '渐进调教', '灌满感内射偏好', '初次开发', '沉迷成瘾'] },
+    '高定销售':   { age: [23, 36], bodies: ['高挑修长腰细腿长', '娇小单薄', '身量适中温婉清秀'], outer: ['温婉得体', '高冷疏离', '端庄自持'], inner: ['野心勃勃', '缺爱依赖', '掌控欲强'], kinks: ['恋物', '展示暴露', '身份扮演', '支配臣服', '言语羞辱'] },
+    '高中老师':   { age: [26, 42], bodies: ['身量适中温婉清秀', '娇小单薄', '高挑修长腰细腿长'], outer: ['端庄自持', '温婉得体', '高冷疏离'], inner: ['外纯内欲', '倔强要强', '缺爱依赖'], kinks: ['束缚', '渐进调教', '感官控制', '灌满感内射偏好', '言语羞辱'] },
+    '大学辅导员': { age: [25, 38], bodies: ['身量适中温婉清秀', '娇小单薄', '精瘦薄肌骨肉匀称'], outer: ['温婉得体', '端庄自持', '泼辣直接'], inner: ['缺爱依赖', '掌控欲强', '外纯内欲'], kinks: ['身份扮演', '渐进调教', '支配臣服', '轻度疼痛', '连续高潮绝顶控制'] },
+    '健身教练':   { age: [22, 34], bodies: ['精瘦薄肌骨肉匀称', '高挑修长腰细腿长', '身量适中温婉清秀'], outer: ['泼辣直接', '高冷疏离', '温婉得体'], inner: ['掌控欲强', '倔强要强', '野心勃勃'], kinks: ['轻度疼痛', '支配臣服', '连续高潮绝顶控制', '感官控制', '多人场面'] }
+  };
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function pickW(arr) { return pick(weighted(arr)); }
+  function pickN(arr, n) {
+    var c = arr.slice(), r = [];
+    while (r.length < n && c.length) { r.push(c.splice(Math.floor(Math.random() * c.length), 1)[0]); }
+    return r;
+  }
+  function pickNW(arr, n) {
+    var c = weighted(arr), r = [];
+    while (r.length < n && c.length) { r.push(c.splice(Math.floor(Math.random() * c.length), 1)[0]); }
+    return r;
+  }
+  function randName() { return pick(SUR) + pick(GIV); }
+  function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
+  // 按身份画像生成一位（组合全部来自该身份的关联池）
+  function genOne(identity, type) {
+    var t = type || pick(TYPE_KEYS);
+    var id = identity || pick(TYPES[t]);
+    var p = PORTRAITS[id] || PORTRAITS['圈内艺人'];
+    return {
+      name: randName(), type: t, identity: id,
+      age: randInt(p.age[0], p.age[1]),
+      body: pickW(p.bodies),
+      outer: pickW(p.outer),
+      inner: pickW(p.inner),
+      kinks: pickNW(p.kinks, 1 + Math.floor(Math.random() * 3)),
+      appoint: Math.random() < 0.6 ? '到店' : '上门',
+      time: '待定',
+      party: '单人',
+      existing: false
+    };
+  }
+  // 换身份时按新身份重roll全部关联字段（保留姓名与预约），保证组合有逻辑
+  function rerollByPortrait(h, identity, type) {
+    var t = type || h.type;
+    var p = PORTRAITS[identity] || PORTRAITS['圈内艺人'];
+    h.type = t; h.identity = identity;
+    h.age = randInt(p.age[0], p.age[1]);
+    h.body = pickW(p.bodies);
+    h.outer = pickW(p.outer);
+    h.inner = pickW(p.inner);
+    h.kinks = pickNW(p.kinks, 1 + Math.floor(Math.random() * 3));
+    return h;
+  }
+  function heroesFromHarem(harem) {
+    return Object.keys(harem || {}).map(function (n) {
+      var h = harem[n] || {};
+      var id = String(h['身份'] || '');
+      var dot = id.indexOf('·');
+      var type = dot > 0 ? id.slice(0, dot) : '娱乐圈';
+      if (TYPE_KEYS.indexOf(type) < 0) type = '娱乐圈';
+      var identity = dot > 0 ? id.slice(dot + 1) : id;
+      if (TYPES[type].indexOf(identity) < 0) identity = TYPES[type][0];
+      var p = PORTRAITS[identity] || PORTRAITS['圈内艺人'];
+      return {
+        name: n, type: type, identity: identity,
+        age: h['年龄'] || randInt(p.age[0], p.age[1]),
+        body: h['身材'] || pickW(p.bodies),
+        outer: h['外在性格'] || pickW(p.outer),
+        inner: h['内在性格'] || pickW(p.inner),
+        kinks: (h['性癖'] && h['性癖'].length) ? h['性癖'].slice() : pickNW(p.kinks, 1),
+        appoint: h['预约类型'] || '到店',
+        time: h['下次预约时间'] || '待定',
+        party: h['登场人数'] || '单人',
+        existing: true
+      };
+    });
+  }
+
+  // ---------- 单人轮播选择器（生成器与面板共用） ----------
+  var sel = { heroes: [], idx: 0, editingIdx: -1, pickType: null, host: null, inited: false };
+  function cur() { return sel.heroes[sel.idx]; }
+  function kinkChips(h) {
+    return h.kinks.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('');
+  }
+  function identityPicker(h, i) {
+    if (sel.editingIdx !== i) return '';
+    var t = sel.pickType;
+    var html = '<div class="picker"><div class="ttl">第一级 · 选类型</div>';
+    TYPE_KEYS.forEach(function (key) {
+      html += '<span class="opt' + (key === t ? ' on' : '') + '" data-act="type" data-v="' + key + '">' + key + '</span>';
+    });
+    html += '</div>';
+    if (t) {
+      html += '<div class="picker"><div class="ttl">第二级 · 选具体身份</div>';
+      TYPES[t].forEach(function (d) {
+        html += '<span class="opt' + (d === h.identity ? ' on' : '') + '" data-act="detail" data-v="' + d + '">' + d + '</span>';
+      });
+      html += '</div>';
+    }
+    return html;
+  }
+  function selCard(h, i) {
+    var timeLabel = h.time && h.time !== '待定' ? h.time : '待定 ✎';
+    return '<div class="card">' +
+      '<div class="nm">' + esc(h.name) + '<span class="age">' + esc(h.age) + ' 岁</span></div>' +
+      '<div class="row"><b>身份</b> · <span class="dim" data-act="identity" data-i="' + i + '">' + esc(h.type + ' / ' + h.identity) + '</span>' + identityPicker(h, i) + '</div>' +
+      '<div class="row"><b>身材</b> · <span class="dim" data-act="body" data-i="' + i + '">' + esc(h.body) + '</span></div>' +
+      '<div class="row"><b>外在</b> · <span class="dim" data-act="outer" data-i="' + i + '">' + esc(h.outer) + '</span></div>' +
+      '<div class="row"><b>内在</b> · <span class="dim" data-act="inner" data-i="' + i + '">' + esc(h.inner) + '</span></div>' +
+      '<div class="row kinks"><b>性癖</b> · <span class="dim" data-act="kink" data-i="' + i + '">换一组</span><br>' + kinkChips(h) + '</div>' +
+      '<div class="row"><b>预约</b> · <span class="dim" data-act="appoint" data-i="' + i + '">' + esc(h.appoint) + '</span>' +
+      ' · <span class="dim" data-act="appointTime" data-i="' + i + '">' + esc(timeLabel) + '</span>' +
+      ' · <span class="dim" data-act="party" data-i="' + i + '">' + esc(h.party) + '</span></div>' +
+      '</div>';
+  }
+  function selRender() {
+    if (!sel.host) return;
+    var h = cur();
+    if (!h) {
+      sel.host.innerHTML = '<div class="empty">没有候选。</div>';
+      return;
+    }
+    var confirmLabel = (MODE === 'generator') ? '确认入池' : '更新入池（覆盖现有进度）';
+    var n = sel.heroes.length;
+    var dots = '';
+    for (var d = 0; d < n; d++) dots += '<span class="dot' + (d === sel.idx ? ' on' : '') + '" data-act="goto" data-v="' + d + '"></span>';
+    sel.host.innerHTML =
+      '<div class="carousel">' +
+      '<button class="arrow" id="prevBtn" type="button"' + (n < 2 ? ' disabled' : '') + '>‹</button>' +
+      '<div class="stage">' + selCard(h, sel.idx) + '</div>' +
+      '<button class="arrow" id="nextBtn" type="button"' + (n < 2 ? ' disabled' : '') + '>›</button>' +
+      '</div>' +
+      '<div class="dots">' + dots + '</div>' +
+      '<div class="ops">' +
+      '<button id="reroll" type="button">' + (n > 1 ? '整组重抽' : '换一位') + '</button>' +
+      '<button id="confirm" type="button">' + confirmLabel + '</button>' +
+      '</div>' +
+      '<div class="tip" id="tip"></div>';
+    if (n > 1) {
+      $('prevBtn').addEventListener('click', function () { sel.idx = (sel.idx - 1 + n) % n; sel.editingIdx = -1; selRender(); });
+      $('nextBtn').addEventListener('click', function () { sel.idx = (sel.idx + 1) % n; sel.editingIdx = -1; selRender(); });
+    }
+    $('reroll').addEventListener('click', function () {
+      if (n > 1) { sel.heroes = [genOne(), genOne(), genOne()]; sel.idx = 0; }
+      else { sel.heroes[0] = genOne(); }
+      sel.editingIdx = -1;
+      selRender();
+    });
+    $('confirm').addEventListener('click', onConfirm);
+  }
+  function bindSelContainer(el) {
+    sel.host = el;
+    el.addEventListener('click', function (e) {
+      var el2 = e.target;
+      var act = el2.getAttribute && el2.getAttribute('data-act');
+      if (!act) return;
+      if (act === 'goto') { sel.idx = parseInt(el2.getAttribute('data-v'), 10) || 0; sel.editingIdx = -1; selRender(); return; }
+      var i = parseInt(el2.getAttribute('data-i'), 10);
+      var h = sel.heroes[i];
+      if (!h) return;
+      if (act === 'identity') {
+        sel.editingIdx = (sel.editingIdx === i) ? -1 : i;
+        sel.pickType = h.type;
+        selRender(); return;
+      }
+      if (act === 'type') {
+        sel.pickType = el2.getAttribute('data-v');
+        rerollByPortrait(h, pick(TYPES[sel.pickType]), sel.pickType);
+        selRender(); return;
+      }
+      if (act === 'detail') { rerollByPortrait(h, el2.getAttribute('data-v'), h.type); selRender(); return; }
+      if (act === 'body') { var p = PORTRAITS[h.identity]; h.body = pickW(p.bodies); selRender(); return; }
+      if (act === 'outer') { var p2 = PORTRAITS[h.identity]; h.outer = pickW(p2.outer); selRender(); return; }
+      if (act === 'inner') { var p3 = PORTRAITS[h.identity]; h.inner = pickW(p3.inner); selRender(); return; }
+      if (act === 'kink') { var p4 = PORTRAITS[h.identity]; h.kinks = pickNW(p4.kinks, 1 + Math.floor(Math.random() * 3)); selRender(); return; }
+      if (act === 'appoint') { h.appoint = h.appoint === '到店' ? '上门' : '到店'; selRender(); return; }
+      if (act === 'party') { h.party = h.party === '单人' ? '多人' : '单人'; selRender(); return; }
+      if (act === 'appointTime') {
+        var input = window.prompt('下次预约时间（取消或留空 = 待定）\n例：本周六晚 / 明晚九点 / 10月20日下午', h.time === '待定' ? '' : h.time);
+        if (input === null) return;
+        h.time = input.trim() ? input.trim() : '待定';
+        selRender(); return;
+      }
+    });
+    // 触摸滑动切换（滚轮式）
+    var sx = 0, sy = 0, moved = false;
+    el.addEventListener('touchstart', function (e) {
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; moved = false;
+    }, { passive: true });
+    el.addEventListener('touchmove', function (e) {
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - sx) > 10 && Math.abs(t.clientX - sx) > Math.abs(t.clientY - sy)) moved = true;
+    }, { passive: true });
+    el.addEventListener('touchend', function (e) {
+      if (!moved || sel.heroes.length < 2) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - sx;
+      if (Math.abs(dx) < 40) return;
+      var n = sel.heroes.length;
+      sel.idx = (sel.idx + (dx < 0 ? 1 : -1) + n) % n;
+      sel.editingIdx = -1;
+      selRender();
+    }, { passive: true });
+    // 键盘左右键
+    if (!bindSelContainer.bound) {
+      bindSelContainer.bound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        if (sel.heroes.length < 2 || !sel.host) return;
+        var n = sel.heroes.length;
+        sel.idx = (sel.idx + (e.key === 'ArrowRight' ? 1 : -1) + n) % n;
+        sel.editingIdx = -1;
+        selRender();
+      });
+    }
+  }
+  function selInit() {
+    if (sel.inited) return;
+    sel.inited = true;
+    if (MODE === 'generator') {
+      sel.heroes = [genOne(), genOne(), genOne()];
+      selRender();
+    } else {
+      readStat().then(function (stat) {
+        var harem = pget(stat, '后宫', null);
+        sel.heroes = (harem && Object.keys(harem).length) ? heroesFromHarem(harem) : [genOne(), genOne(), genOne()];
+        selRender();
+      });
+    }
+    sel.idx = 0;
+  }
+  function tip(msg) { var t = $('tip'); if (t) t.textContent = msg; }
+
+  function buildHarem() {
+    var harem = {};
+    sel.heroes.forEach(function (h) {
+      harem[h.name] = {
+        '身份': h.type + '·' + h.identity,
+        '年龄': h.age,
+        '身材': h.body,
+        '外在性格': h.outer,
+        '内在性格': h.inner,
+        '性癖': h.kinks.slice(),
+        '预约类型': h.appoint,
+        '下次预约时间': h.time,
+        '登场人数': h.party,
+        '好感度': 5,
+        '性欲': 5
+      };
+    });
+    return harem;
+  }
+  function writeStat(harem, firstName, phase) {
+    return thCall('getCurrentMessageId', undefined).then(function (id) {
+      var opt = { type: 'message' };
+      if (id !== undefined && id !== null) opt.message_id = id;
+      return thCall('getVariables', opt).then(function (vars) {
+        var stat = pget(vars, 'stat_data', {}) || {};
+        pset(stat, '后宫', harem);
+        if (firstName) pset(stat, '世界.当前女主', firstName);
+        if (phase) pset(stat, '剧情.剧情阶段', phase);
+        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
+      });
+    });
+  }
+
+  // ---------- 预填输入栏（官方 /setinput，换行写 {{newline}}） ----------
+  function prefill(lines, okMsg) {
+    var text = lines.join('\n').split('|').join('／');
+    var cmd = '/setinput ' + text.split('\n').join('{{newline}}');
+    var ok = false;
+    if (BRIDGE) {
+      // 桥接模式：把命令交给当轮楼层执行器（triggerSlash）
+      framePost({ source: 'mxt-frame', type: 'setinput', text: cmd });
+      ok = true;
+    } else {
+      try { triggerSlash(cmd); ok = true; } catch (e) {}
+    }
+    if (ok) {
+      tip(okMsg || '已填入输入栏，可修改后发送，以你发送的为准');
+    } else {
+      var box = document.createElement('div');
+      box.className = 'copybox';
+      box.textContent = text + '\n（当前环境不支持自动填入，请手动复制以上内容发送）';
+      var hostEl = sel.host || document.body;
+      hostEl.appendChild(box);
+      tip('请手动复制上方内容');
+    }
+  }
+  function rosterLines() {
+    var lines = ['【花名册已更新】'];
+    sel.heroes.forEach(function (h) {
+      lines.push(h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
+        '，预约：' + h.appoint + '，时间：' + h.time + '，' + h.party + '登场）');
+    });
+    lines.push('当前目标：' + sel.heroes[0].name);
+    lines.push('（本段由状态栏自动填入，可修改补充；以你发送的内容为准）');
+    return lines;
+  }
+  function targetLines(name, h, stat) {
+    var kinks = h['性癖'] || [];
+    return [
+      '【切换目标：' + name + '】',
+      '身份：' + (h['身份'] || '') + '，' + (h['年龄'] || '') + '岁',
+      '身材：' + (h['身材'] || ''),
+      '性格：外 ' + (h['外在性格'] || '') + ' × 内 ' + (h['内在性格'] || ''),
+      '已解锁性癖：' + (kinks.length ? kinks.join('、') : '尚未解锁'),
+      '好感度 ' + (h['好感度'] || 0) + '（' + stageOf(h['好感度'] || 0) + '）· 性欲 ' + (h['性欲'] || 0),
+      '预约：' + (h['预约类型'] || '到店') + ' · 下次预约时间：' + (h['下次预约时间'] || '待定') + ' · 登场：' + (h['登场人数'] || '单人'),
+      '当前：' + pget(stat, '世界.当前日期', '') + ' ' + pget(stat, '世界.当前时间段', '') + ' · ' + pget(stat, '世界.当前场景', ''),
+      '接下来以她为目标。',
+      '（本段由状态栏自动填入，可修改补充；以你发送的内容为准）'
+    ];
+  }
+
+  // ---------- 确认入池 ----------
+  function onConfirm() {
+    var btn = $('confirm');
+    if (btn) { btn.disabled = true; btn.textContent = '写入中…'; }
+    tip('');
+    if (MODE !== 'generator' && sel.heroes.some(function (h) { return h.existing; })) {
+      if (!window.confirm('重新入池会覆盖当前花名册与全部进度，确定继续？')) {
+        if (btn) { btn.disabled = false; btn.textContent = '更新入池（覆盖现有进度）'; }
+        return;
+      }
+    }
+    var harem = buildHarem();
+    var firstName = sel.heroes.length ? sel.heroes[0].name : '';
+    var phase = (MODE === 'generator') ? '深耕' : null;
+    writeStat(harem, firstName, phase).then(function () {
+      if (MODE === 'generator') {
+        var desc = sel.heroes.map(function (h) {
+          return h.name + '（' + h.type + '·' + h.identity + '，' + h.age + '岁，' + h.body + '，外' + h.outer + '内' + h.inner +
+            '，' + h.appoint + '，' + h.time + '，' + h.party + '）';
+        }).join('；');
+        var msg = '今晚入池的三位：' + desc + '。从第一位开始。';
+        if (BRIDGE) {
+          framePost({ source: 'mxt-frame', type: 'gen', message: msg });
+          tip('已写入变量，正在开始第一夜…');
+          switchMode('bar');
+        } else if (createChatMessages) {
+          createChatMessages([{ role: 'user', message: msg }]).then(function () {
+            if (triggerSlash) triggerSlash('/trigger');
+          }).catch(function () { tip('已写入变量，请手动发送一句话让 AI 开始第一夜。'); });
+        } else {
+          tip('已写入变量。请手动发送一句话让 AI 开始第一夜。');
+        }
+      } else {
+        prefill(rosterLines(), '已更新花名册并填入输入栏，可修改后发送');
+        if (btn) { btn.disabled = false; btn.textContent = '更新入池（覆盖现有进度）'; }
+      }
+    }).catch(function (err) {
+      tip('写入失败：' + (err && err.message ? err.message : err));
+      if (btn) { btn.disabled = false; btn.textContent = (MODE === 'generator') ? '确认入池' : '更新入池（覆盖现有进度）'; }
+    });
+  }
+
+  // ---------- 紧凑栏 ----------
+  function barRender() {
+    if (MODE !== 'bar') return;
+    readStat().then(function (stat) {
+      if (!stat) {
+        $('date').textContent = '等待楼层环境…（与 AI 对话一轮后此处显示）';
+        return;
+      }
+      $('date').textContent = pget(stat, '世界.当前日期', '--');
+      $('time').textContent = pget(stat, '世界.当前时间段', '--');
+      $('scene').textContent = pget(stat, '世界.当前场景', '--');
+      $('phase').textContent = pget(stat, '剧情.剧情阶段', '--');
+      var name = pget(stat, '世界.当前女主', '') || '未定';
+      $('hero').textContent = name;
+      var h = (pget(stat, '后宫', {}) || {})[name];
+      if (h) {
+        var aff = h['好感度'] || 0;
+        $('stage').textContent = stageOf(aff);
+        setBar($('affNum'), $('affFill'), aff);
+        setBar($('lustNum'), $('lustFill'), h['性欲'] || 0);
+      } else {
+        $('stage').textContent = '';
+        setBar($('affNum'), $('affFill'), 0);
+        setBar($('lustNum'), $('lustFill'), 0);
+      }
+    });
+  }
+
+  // ---------- 人物记录（折叠档案 + 只读 + 设为目标） ----------
+  var rec = { current: null, open: false, expanded: {} };
+  function recRender() {
+    readStat().then(function (stat) {
+      var box = $('recBody');
+      if (!box) return;
+      if (!stat) { box.innerHTML = '<div class="empty">等待楼层环境…（与 AI 对话一轮后此处显示）</div>'; return; }
+      var harem = pget(stat, '后宫', {}) || {};
+      var names = Object.keys(harem);
+      var curName = pget(stat, '世界.当前女主', '');
+      if (!names.length) { box.innerHTML = '<div class="empty">花名册还是空的。第一夜开局时选定的三位会记在这里。</div>'; return; }
+      if (!rec.current || !harem[rec.current]) rec.current = names[0];
+
+      var html = '<div class="list">';
+      names.forEach(function (n) {
+        html += '<span class="tab' + (n === rec.current ? ' on' : '') + '" data-n="' + esc(n) + '">' + esc(n) +
+          (n === curName ? '<span class="cur">当前</span>' : '') + '</span>';
+      });
+      html += '</div>';
+
+      var h = harem[rec.current] || {};
+      var kinks = h['性癖'] || [];
+      var aff = h['好感度'] || 0;
+      var isOpen = !!rec.expanded[rec.current];
+      var brief = esc((h['身份'] || '')) + ' · ' + esc(h['预约类型'] || '到店') + ' · 下次预约 ' + esc(h['下次预约时间'] || '待定');
+      html += '<div class="profile">' +
+        '<div class="psum" data-act="toggle">' +
+        '<span class="pname">' + esc(rec.current) + '</span>' +
+        '<span class="pstage">' + stageOf(aff) + '</span>' +
+        '<span class="pbrief">' + brief + '</span>' +
+        '<span class="pexpand">' + (isOpen ? '收起 ▴' : '展开档案 ▾') + '</span>' +
+        '</div>' +
+        '<div class="pdetail' + (isOpen ? ' open' : '') + '">' +
+        '<div class="row"><b>身份</b> · ' + esc(h['身份'] || '') + '　<b>年龄</b> · ' + esc(h['年龄'] || '') + ' 岁</div>' +
+        '<div class="row"><b>身材</b> · ' + esc(h['身材'] || '') + '</div>' +
+        '<div class="row"><b>性格</b> · 外 ' + esc(h['外在性格'] || '') + ' × 内 ' + esc(h['内在性格'] || '') + '</div>' +
+        '<div class="row"><b>预约类型</b> · ' + esc(h['预约类型'] || '到店') + '　<b>下次预约时间</b> · ' + esc(h['下次预约时间'] || '待定') + '　<b>登场</b> · ' + esc(h['登场人数'] || '单人') + '</div>' +
+        '<div class="rbar"><div class="lab"><span>好感度</span><span>' + aff + ' / 100</span></div><div class="track"><div class="fill" style="width:' + Math.max(0, Math.min(100, aff)) + '%"></div></div></div>' +
+        '<div class="rbar"><div class="lab"><span>性欲</span><span>' + (h['性欲'] || 0) + ' / 100</span></div><div class="track"><div class="fill lust" style="width:' + Math.max(0, Math.min(100, h['性欲'] || 0)) + '%"></div></div></div>' +
+        '<div class="row kinks"><b>已解锁性癖</b></div><div>' +
+        (kinks.length ? kinks.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('') : '<span class="chip">尚未解锁</span>') +
+        '</div>' +
+        '<span class="targetbtn" data-target="' + esc(rec.current) + '">设为目标 · 填入输入栏</span>' +
+        '</div></div>';
+
+      var logs = pget(stat, '剧情.对局日志', []) || [];
+      html += '<div class="log"><div class="lt">对局日志</div>';
+      if (!logs.length) {
+        html += '<div class="logItem">还没有记录。</div>';
+      } else {
+        logs.slice().reverse().forEach(function (it) {
+          html += '<div class="logItem"><span class="d">' + esc(pget(it, '日期', '')) + '</span>' +
+            '<span class="s">' + esc(pget(it, '场景', '')) + '</span>' + esc(pget(it, '事件', '')) + '</div>';
+        });
+      }
+      html += '</div>';
+      box.innerHTML = html;
+    });
+  }
+  function bindRec() {
+    var box = $('recBody');
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      var el = e.target;
+      if (!el.getAttribute) return;
+      var n = el.getAttribute('data-n');
+      if (n) { rec.current = n; recRender(); return; }
+      if (el.getAttribute('data-act') === 'toggle') {
+        rec.expanded[rec.current] = !rec.expanded[rec.current];
+        recRender(); return;
+      }
+      var t = el.getAttribute('data-target');
+      if (t) {
+        readStat().then(function (stat) {
+          var h = (pget(stat, '后宫', {}) || {})[t];
+          if (!h) return;
+          prefill(targetLines(t, h, stat || {}), '已把「' + t + '」的信息填入输入栏，可修改后发送，以你发送的为准');
+        });
+      }
+    });
+  }
+
+  // ---------- 面板折叠 ----------
+  function bindPanels() {
+    $('headSel').addEventListener('click', function () {
+      var body = $('bodySel'), head = $('headSel');
+      var open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      head.textContent = (open ? '▸' : '▾') + ' 人物选择器';
+      if (!open) selInit();
+    });
+    $('headRec').addEventListener('click', function () {
+      var body = $('bodyRec'), head = $('headRec');
+      var open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      head.textContent = (open ? '▸' : '▾') + ' 人物记录';
+      rec.open = !open;
+      if (!open) recRender();
+    });
+    $('switchBtn').addEventListener('click', function () {
+      var body = $('bodyRec');
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        $('headRec').textContent = '▾ 人物记录';
+        rec.open = true;
+        recRender();
+      }
+    });
+  }
+
+  // ---------- 模式切换（generator 开场选人 / bar 常驻状态栏） ----------
+  function switchMode(mode) {
+    if (mode !== 'generator' && mode !== 'bar') return;
+    if (mode === MODE && sel.inited) return;
+    MODE = mode;
+    $('genMode').style.display = (mode === 'generator') ? 'block' : 'none';
+    $('barMode').style.display = (mode === 'bar') ? 'block' : 'none';
+    if (mode === 'generator') {
+      sel.inited = false;
+      bindSelContainer($('genSel'));
+      selInit();
+    } else {
+      bindSelContainer($('barSel'));
+      bindPanels();
+      bindRec();
+      barRender();
+      recRender();
+    }
+    reportHeight();
+  }
+
+  // ---------- 高度同步（桥接模式下让父容器撑开 iframe） ----------
+  var lastH = 0;
+  function reportHeight() {
+    if (!BRIDGE) return;
+    var h = document.body.scrollHeight;
+    if (h && Math.abs(h - lastH) > 4) {
+      lastH = h;
+      framePost({ source: 'mxt-frame', type: 'height', h: h });
+    }
+  }
+
+  // ---------- 启动 ----------
+  if (BRIDGE) {
+    // 常驻模式：向父页面桥接询问当前应有模式（开场白期间为 generator）
+    framePost({ source: 'mxt-frame', type: 'mode?' });
+    setTimeout(function () {
+      if (!sel.inited) switchMode('bar');
+    }, 1500);
+  } else {
+    switchMode(window.__MXT_MODE__ || 'bar');
+  }
+  setInterval(function () {
+    if (MODE === 'bar') {
+      barRender();
+      if (rec.open) recRender();
+    }
+    reportHeight();
+  }, 2000);
+})();
+</script>
+</body>
+</html>
