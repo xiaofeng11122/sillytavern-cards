@@ -195,8 +195,9 @@ function tavern_sync(compiler: webpack.Compiler) {
  * 入口名：`<src|示例>/A/B` → `A/B`，用来在做 `--config-name` 过滤时指认单个入口。
  * 单独构建某一个界面/脚本时用得上，例如只构建窃玉偷香的两个产物：
  *   webpack --mode production --config-name 窃玉偷香/脚本/目标生成器
- * 注意必须写成**对象字面量的静态属性**：若把整个配置包在函数里返回，
- * webpack-cli 取 `config.name` 时拿到的是空值，`--config-name` 就过滤不出任何东西。
+ * `name` 写在配置对象的字面量里即可。webpack-cli 是在**配置解析完成后**按 name 过滤的，
+ * 所以入口配置即使写成工厂函数也没关系，`--config-name` 一样能用
+ * （实测 webpack-cli 7.2.3 + webpack 5.111.1）。
  */
 function entry_name(script: string) {
   const dir = path.parse(script).dir;
@@ -605,9 +606,10 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
   });
 }
 
-// 本地改动: 导出「静态 name + 工厂函数」的包，而不是直接导出工厂函数的数组。
-// 导出工厂数组时 webpack-cli 取不到 name，`--config-name` 无法用来只构建单个入口。
-export default config.entries.map(entry => ({
-  name: entry_name(entry.script),
-  config: parse_configuration(entry),
-}));
+// 本地改动勘误 (2026-10-15): 不要再把每个入口包成 { name, config } 这种「描述符」。
+// webpack-cli 不认这种形状, 会把 config 当成配置对象的未知属性, 整个构建直接中止:
+//   [webpack-cli] Invalid configuration object. configuration[N] has an unknown property 'config'.
+// GitHub Actions 的 bundle 从 2026-10-09 (b093509) 起每次 push 都红、失败邮件发给仓库主,
+// 就是这个包法引起的, 与依赖版本无关 (锁文件没动过)。
+// 上游写法直接导出工厂函数数组即可, `--config-name` 照样能用 —— name 在解析后的配置对象里。
+export default config.entries.map(parse_configuration);
