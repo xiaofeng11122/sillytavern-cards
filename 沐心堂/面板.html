@@ -192,14 +192,14 @@
   <!-- 模式一：人物生成器（选人）。开场白注入的是这一块，输入栏「沐心堂 · 选人」按钮展开的也是这一块 -->
   <div id="genMode" style="display:none">
     <div class="hd">沐心堂 · 选人<span class="sys">SYS · ONLINE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
-    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁）· 每位可单独入池，只覆盖那一个</div>
+    <div class="sub">一次只看一位，左右箭头切换 · 点带虚线的维度可按她的身份关联池更换（身份定了，身材性格性癖都从她的行当里出，不乱搭）· 身份为先选类型再选具体差事 · 预约选了多人登场，可勾她带的人（关系按她的年龄过滤，女儿须她满38岁、岳母须满26岁，同伴年龄不超过45岁）· 每位可单独入池，只覆盖那一个</div>
     <div id="genSel"></div>
   </div>
 
   <!-- 模式二：人物记录器（档案）。与生成器互相独立，由「沐心堂 · 档案」按钮展开 -->
   <div id="recMode" style="display:none">
     <div class="hd">沐心堂 · 档案<span class="sys">ARCHIVE</span><span class="hd-x" id="hdX">收起 ✕</span></div>
-    <div class="sub">点名字切换查看 · 「展开档案」看她的个人信息、预约类型与下次预约时间 · 点「设为目标 · 填入输入栏」把她的现状填进输入栏，你改补充完再发出去，以你发送的内容为准</div>
+    <div class="sub">档案只记两样：她是谁（身份/年龄/身材/性格）、怎么约的（预约类型/下次预约时间/登场与偕同）。好感度、性欲、心理想法、身体状态那些在每条 AI 消息末尾的状态栏里，这里不重复。点名字切换查看，点「展开档案」看详情，点「设为目标 · 填入输入栏」把她的信息填进输入栏——你补充修改完再发出去，以你发送的内容为准</div>
     <div id="recBody"></div>
   </div>
 
@@ -383,7 +383,7 @@
   }
   function relAge(hostAge, r) {
     var gap = randInt(r.gap[0], r.gap[1]);
-    return Math.max(18, Math.min(60, hostAge + gap));
+    return Math.max(18, Math.min(45, hostAge + gap));
   }
   // 女主年龄变化后：丢弃变得不合理的关系，保留的关系按新年龄重算岁数
   function remapMates(h) {
@@ -480,13 +480,15 @@
     var t = sel.pickType;
     var html = '<div class="picker"><div class="ttl">第一级 · 选类型</div>';
     TYPE_KEYS.forEach(function (key) {
-      html += '<span class="opt' + (key === t ? ' on' : '') + '" data-act="type" data-v="' + key + '">' + key + '</span>';
+      // data-i 必须带：点击处理器靠它取「改的是哪一位候选」，
+      // 缺了就会 sel.heroes[NaN] = undefined 直接 return（表现为点了没反应）
+      html += '<span class="opt' + (key === t ? ' on' : '') + '" data-act="type" data-i="' + i + '" data-v="' + key + '">' + key + '</span>';
     });
     html += '</div>';
     if (t) {
       html += '<div class="picker"><div class="ttl">第二级 · 选具体身份</div>';
       TYPES[t].forEach(function (d) {
-        html += '<span class="opt' + (d === h.identity ? ' on' : '') + '" data-act="detail" data-v="' + d + '">' + d + '</span>';
+        html += '<span class="opt' + (d === h.identity ? ' on' : '') + '" data-act="detail" data-i="' + i + '" data-v="' + d + '">' + d + '</span>';
       });
       html += '</div>';
     }
@@ -495,7 +497,7 @@
   // 多人登场：她带的人（关系按她的年龄过滤，可多选可只选一个）
   function matesBlock(h, i) {
     if (h.party !== '多人') return '';
-    var html = '<div class="mates"><div class="ttl">她带的人 · 关系按她的年龄过滤（' + h.age + '岁）：女儿须她满38岁、岳母须满26岁；可多选，也可只选一个</div>';
+    var html = '<div class="mates"><div class="ttl">她带的人 · 关系按她的年龄过滤（' + h.age + '岁）：女儿须她满38岁、岳母须满26岁，同伴年龄不超过45岁；可多选，也可只选一个</div>';
     RELATIVES.forEach(function (r) {
       var ok = h.age >= r.minHost;
       var on = h.mates.some(function (m) { return m.rel === r.key; });
@@ -580,6 +582,7 @@
       if (!act) return;
       if (act === 'goto') { sel.idx = parseInt(el2.getAttribute('data-v'), 10) || 0; sel.editingIdx = -1; selRender(); return; }
       var i = parseInt(el2.getAttribute('data-i'), 10);
+      if (isNaN(i)) i = sel.editingIdx;        // 兜底：认不出是哪一位就用当前正在编辑的那位
       var h = sel.heroes[i];
       if (!h) return;
       if (act === 'identity') {
@@ -943,50 +946,29 @@
       html += '</div>';
 
       var h = harem[rec.current] || {};
-      var kinks = h['性癖'] || [];
-      var aff = h['好感度'] || 0;
-      var lust = h['性欲'] || 0;
       var isOpen = !!rec.expanded[rec.current];
       var brief = esc((h['身份'] || '')) + ' · ' + esc(h['预约类型'] || '到店') + ' · 下次预约 ' + esc(h['下次预约时间'] || '待定');
       var mates = h['同伴'] || [];
-      var mind = String(h['心理想法'] || '').trim();
-      var bodyS = String(h['身体状态'] || '').trim();
+      // 档案只记人事与日程：她是谁、怎么约的。好感度/性欲/心理想法/身体状态属于
+      // 状态栏那一套（每轮 AI 输出末尾渲染），不在这里重复一遍。
       html += '<div class="profile">' +
         '<div class="psum" data-act="toggle">' +
         '<span class="pname">' + esc(rec.current) + '</span>' +
-        '<span class="pstage">' + stageOf(aff) + '</span>' +
         '<span class="pbrief">' + brief + '</span>' +
         '<span class="pexpand">' + (isOpen ? '收起 ▴' : '展开档案 ▾') + '</span>' +
         '</div>' +
         '<div class="pdetail' + (isOpen ? ' open' : '') + '">' +
-        '<div class="row"><b>身份</b> · ' + esc(h['身份'] || '') + '　<b>年龄</b> · ' + esc(h['年龄'] || '') + ' 岁</div>' +
+        '<div class="row"><b>身份</b> · ' + esc(h['身份'] || '<span class="mut">未填</span>') + '　<b>年龄</b> · ' + (h['年龄'] ? esc(h['年龄']) + ' 岁' : '<span class="mut">未填</span>') + '</div>' +
         '<div class="row"><b>身材</b> · ' + esc(h['身材'] || '') + '</div>' +
         '<div class="row"><b>性格</b> · 外 ' + esc(h['外在性格'] || '') + ' × 内 ' + esc(h['内在性格'] || '') + '</div>' +
-        '<div class="row"><b>预约类型</b> · ' + esc(h['预约类型'] || '到店') + '　<b>下次预约时间</b> · ' + esc(h['下次预约时间'] || '待定') + '　<b>登场</b> · ' + esc(h['登场人数'] || '单人') + '</div>' +
+        '<div class="row"><b>预约类型</b> · ' + esc(h['预约类型'] || '到店') + '　<b>下次预约时间</b> · ' + esc(h['下次预约时间'] || '待定') + '</div>' +
+        '<div class="row"><b>登场</b> · ' + esc(h['登场人数'] || '单人') +
         (mates.length
-          ? ('<div class="row"><b>她带的人</b> · ' + mates.map(function (m) { return esc(m['关系']) + '（' + esc(m['年龄']) + '岁）'; }).join('、') + '</div>')
+          ? ('　<b>偕同</b> · ' + mates.map(function (m) { return esc(m['关系']) + '（' + esc(m['年龄']) + '岁）'; }).join('、'))
           : '') +
-        '<div class="rbar"><div class="lab"><span>好感度</span><span>' + aff + ' / 100</span></div><div class="track"><div class="fill" style="width:' + Math.max(0, Math.min(100, aff)) + '%"></div></div></div>' +
-        '<div class="rbar"><div class="lab"><span>性欲</span><span>' + lust + ' / 100' + (lust >= 60 ? ' · 露骨已解锁' : '') + '</span></div><div class="track"><div class="fill lust" style="width:' + Math.max(0, Math.min(100, lust)) + '%"></div></div></div>' +
-        '<div class="row"><b>心理想法</b> · ' + (mind ? '「' + esc(mind) + '」' : '<span class="mut">尚无记录</span>') + '</div>' +
-        '<div class="row"><b>身体状态</b> · ' + (bodyS ? esc(bodyS) : '<span class="mut">尚无记录</span>') + '</div>' +
-        '<div class="row kinks"><b>已解锁性癖</b></div><div>' +
-        (kinks.length ? kinks.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('') : '<span class="chip">尚未解锁</span>') +
         '</div>' +
         '<span class="targetbtn" data-target="' + esc(rec.current) + '">设为目标 · 填入输入栏</span>' +
         '</div></div>';
-
-      var logs = pget(stat, '剧情.对局日志', []) || [];
-      html += '<div class="log"><div class="lt">对局日志</div>';
-      if (!logs.length) {
-        html += '<div class="logItem">还没有记录。</div>';
-      } else {
-        logs.slice().reverse().forEach(function (it) {
-          html += '<div class="logItem"><span class="d">' + esc(pget(it, '日期', '')) + '</span>' +
-            '<span class="s">' + esc(pget(it, '场景', '')) + '</span>' + esc(pget(it, '事件', '')) + '</div>';
-        });
-      }
-      html += '</div>';
       box.innerHTML = html;
     });
   }
