@@ -213,28 +213,31 @@
   })();
 
   // ---------- 运行环境 ----------
-  // 本页由酒馆助手脚本以 srcdoc 注入 SillyTavern 主页面：与宿主同源（继承宿主 origin），
-  // 因此既可以直连宿主上的酒馆助手全局函数，也可以直接操作宿主的输入栏 DOM。
-  // 不再需要「楼层 iframe 代理 + postMessage」那层桥接——那一层正是过去 id 抢占与沙箱拦截的源头。
+  // 本页由酒馆助手脚本以 srcdoc 注入 SillyTavern 宿主页面的 DOM：与宿主同源，
+  // 所以能直接读写宿主的输入栏 #send_textarea。
+  // 但要拿酒馆助手 API（getVariables / updateVariablesWith / triggerSlash…）**不能**看宿主窗口：
+  // 那些是注入在**脚本 iframe** 里的全局自由函数，宿主窗口上并没有。脚本已把它们桥接到
+  // 宿主窗口的 __MXT_API__，本页从这里取——这是面板唯一的数据通道。
   var HOST = null;
   try { if (window.parent && window.parent !== window) HOST = window.parent; } catch (e) { HOST = null; }
 
   function hostFn(fn) {
-    if (!HOST) return null;
-    var f = null;
-    try { f = HOST[fn]; } catch (e) { f = null; }
-    if (typeof f === 'function') return function (args) { return f(args); };
-    var TH = null;
-    try { TH = HOST.TavernHelper; } catch (e2) { TH = null; }
-    if (TH && typeof TH[fn] === 'function') return function (args) { return TH[fn](args); };
+    var api = null;
+    try { api = HOST && HOST.__MXT_API__; } catch (e) { api = null; }
+    if (api && typeof api[fn] === 'function') {
+      return function () { return api[fn].apply(null, arguments); };
+    }
+    // 降级：本页若恰好被嵌进酒馆助手 iframe（同环境），全局自由函数可直接用
+    try {
+      if (typeof window[fn] === 'function') return function () { return window[fn].apply(null, arguments); };
+    } catch (e2) {}
     return null;
   }
   function thCall(fn, args) {
     var f = hostFn(fn);
     if (!f) return Promise.reject(new Error('宿主未提供 ' + fn + '（请确认酒馆助手已加载）'));
-    return Promise.resolve().then(function () { return f(args); });
+    return Promise.resolve().then(function () { return f.apply(null, args || []); });
   }
-  var BRIDGE = false;
   function framePost(msg) {
     try { if (HOST) HOST.postMessage(msg, '*'); } catch (e) {}
   }
@@ -273,14 +276,13 @@
     numEl.textContent = val;
     fillEl.style.width = val + '%';
   }
+  // 面板常驻输入栏上方，**不在任何消息楼层里**，没有 getCurrentMessageId 可用，
+  // 所以固定读最新楼层的 message 快照（message_id:-1）；失败再退到 chat 作用域。
   function readStat() {
-    return thCall('getCurrentMessageId', undefined).then(function (id) {
-      var opt = { type: 'message' };
-      if (id !== undefined && id !== null) opt.message_id = id;
-      return thCall('getVariables', opt);
-    }).then(function (v) {
-      return pget(v, 'stat_data', null);
-    }).catch(function () { return null; });
+    return thCall('getVariables', [{ type: 'message', message_id: -1 }])
+      .catch(function () { return thCall('getVariables', [{ type: 'chat' }]); })
+      .then(function (v) { return pget(v, 'stat_data', null); })
+      .catch(function () { return null; });
   }
   function weighted(arr) {
     // 池内前两项重复占位，体现身份对搭配的倾向性，其余等权
@@ -674,32 +676,27 @@
     });
     return harem;
   }
+  // 写入一律落到**最新楼层**的 message 快照（-1）：面板不在楼层里，取不到“当前楼层”。
   function writeStat(harem, firstName, phase) {
-    return thCall('getCurrentMessageId', undefined).then(function (id) {
-      var opt = { type: 'message' };
-      if (id !== undefined && id !== null) opt.message_id = id;
-      return thCall('getVariables', opt).then(function (vars) {
-        var stat = pget(vars, 'stat_data', {}) || {};
-        pset(stat, '后宫', harem);
-        if (firstName) pset(stat, '世界.当前女主', firstName);
-        if (phase) pset(stat, '剧情.剧情阶段', phase);
-        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
-      });
+    var opt = { type: 'message', message_id: -1 };
+    return thCall('getVariables', [opt]).then(function (vars) {
+      var stat = pget(vars, 'stat_data', {}) || {};
+      pset(stat, '后宫', harem);
+      if (firstName) pset(stat, '世界.当前女主', firstName);
+      if (phase) pset(stat, '剧情.剧情阶段', phase);
+      return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
     });
   }
   // 单人入池/更新：只写她一个，其他人的档案与进度原样保留
   function writeOne(h, existing) {
-    return thCall('getCurrentMessageId', undefined).then(function (id) {
-      var opt = { type: 'message' };
-      if (id !== undefined && id !== null) opt.message_id = id;
-      return thCall('getVariables', opt).then(function (vars) {
-        var stat = pget(vars, 'stat_data', {}) || {};
-        var harem = pget(stat, '后宫', {}) || {};
-        harem[h.name] = buildOne(h, existing || harem[h.name]);
-        if (!pget(stat, '世界.当前女主', '')) pset(stat, '世界.当前女主', h.name);
-        if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
-        return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
-      });
+    var opt = { type: 'message', message_id: -1 };
+    return thCall('getVariables', [opt]).then(function (vars) {
+      var stat = pget(vars, 'stat_data', {}) || {};
+      var harem = pget(stat, '后宫', {}) || {};
+      harem[h.name] = buildOne(h, existing || harem[h.name]);
+      if (!pget(stat, '世界.当前女主', '')) pset(stat, '世界.当前女主', h.name);
+      if (pget(stat, '剧情.剧情阶段', '') === '选妃') pset(stat, '剧情.剧情阶段', '深耕');
+      return thCall('updateVariablesWith', [function (v) { pset(v, 'stat_data', stat); return v; }, opt]);
     });
   }
 
