@@ -40,3 +40,23 @@ $('body').load('https://testingcf.jsdelivr.net/gh/xiaofeng11122/sillytavern-card
 - 界面用 `position:fixed` 挂靠视口，用 `$('body').load()` 注入到酒馆页面里运行，不套 iframe。
 - 读写变量走 MVU：优先 `Mvu.getMvuData` / `Mvu.replaceMvuData`，取不到时回退到 `getVariables` / `replaceVariables`（`message_id: 'latest'`）。
 - jsdelivr 有缓存，改完文件约 12 小时内自动刷新；急用可在 jsdelivr 的 purge 工具里刷 `cdn.jsdelivr.net` 域名，或临时换 `fastly.jsdelivr.net`。
+- **推荐用版本标签取，而不是 `@main`**：每次推送后 `bundle` 工作流会自动打 tag（如 `v0.0.12`），用 tag 取的缓存立刻生效；`@main` 最长会滞后 12 小时。查最新 tag：
+
+  ```
+  https://github.com/xiaofeng11122/sillytavern-cards/tags
+  ```
+
+  例：`https://testingcf.jsdelivr.net/gh/xiaofeng11122/sillytavern-cards@v0.0.12/电车之狼/界面/状态栏.html`
+
+## 上下文开销（实测估算）
+
+| 项 | tokens | 何时进上下文 |
+|---|---|---|
+| 世界观 + 扮演准则 + MVU（11 条常驻） | 3,903 | 每次请求 |
+| 地理 2 条 | 660 | 提到车厢/线路时 |
+| 单个角色档案 | 1,108（平均） | 提到她时 |
+
+- 典型一次请求 ≈ **5,011 tokens**，最坏（常驻+地理+同车 2 人）≈ **6,779**
+- 18 份档案合计约 20,000 tokens，但按角色名触发，不会同时进上下文
+- 界面 HTML **不占任何 token**：`markdownOnly` 替换只在显示层生效，配套的 `promptOnly` 规则把占位符从 AI 上下文里删掉
+
