@@ -29,6 +29,7 @@
 #dnw-hud .dnw-mini{width:54px;height:4px;border-radius:2px;background:#2b2724;overflow:hidden}
 #dnw-hud .dnw-mini i{display:block;height:100%;background:linear-gradient(90deg,#8d3b3b,#c85a4a)}
 #dnw-hud .dnw-flag{font-size:10px;color:#d9a83c}
+#dnw-hud .dnw-meta{font-size:10px;color:#6f675f;white-space:nowrap}
 #dnw-hud::-webkit-scrollbar,#dnw-hud .dnw-ledger::-webkit-scrollbar{width:5px}
 #dnw-hud .dnw-ledger::-webkit-scrollbar-thumb{background:#3f3833;border-radius:3px}
 </style>
@@ -163,8 +164,10 @@
       var rows = names.map(function (n) {
         var r = pp[n] || {};
         var v = r['沦陷值'] || 0;
+        var meet = r['遭遇'] || 0, free = r['释放'] || 0;
         var flag = r['认知'] === '确认只有自己看得见' ? '<span class="dnw-flag">知</span>' : '';
         return '<div class="dnw-li"><span class="dnw-nm">' + esc(n) + '</span>' + flag +
+          '<span class="dnw-meta">遇' + meet + (free ? '·放' + free : '') + '</span>' +
           '<div class="dnw-mini"><i style="width:' + v + '%"></i></div>' +
           '<span class="dnw-num">' + v + '</span></div>';
       }).join('');
