@@ -1,0 +1,181 @@
+<div id="dnw-hud"></div>
+<style>
+#dnw-hud{position:fixed;right:14px;bottom:96px;z-index:9998;width:252px;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;line-height:1.5;color:#e8e3dc;user-select:none}
+#dnw-hud .dnw-panel{background:linear-gradient(180deg,#1c1a18 0%,#141312 100%);border:1px solid #3a3330;border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.55);overflow:hidden}
+#dnw-hud .dnw-head{display:flex;align-items:center;gap:6px;padding:6px 9px;background:#221f1d;border-bottom:1px solid #3a3330;cursor:move}
+#dnw-hud .dnw-title{flex:1;font-size:12px;letter-spacing:.06em;color:#d8cec2}
+#dnw-hud .dnw-tab{padding:2px 8px;border-radius:4px;cursor:pointer;color:#8b8178;font-size:11px}
+#dnw-hud .dnw-tab.on{background:#382f2a;color:#f0e6d8}
+#dnw-hud .dnw-fold{cursor:pointer;color:#8b8178;padding:0 3px}
+#dnw-hud .dnw-body{padding:8px 9px 10px}
+#dnw-hud .dnw-body.hide{display:none}
+#dnw-hud .dnw-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+#dnw-hud .dnw-k{color:#8b8178;white-space:nowrap}
+#dnw-hud .dnw-v{color:#efe7db;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dnw-hud .dnw-bar{height:5px;border-radius:3px;background:#2b2724;overflow:hidden;margin:2px 0 6px}
+#dnw-hud .dnw-bar i{display:block;height:100%;width:0}
+#dnw-hud .dnw-tu i{background:linear-gradient(90deg,#8d3b3b,#c85a4a)}
+#dnw-hud .dnw-ex i{background:linear-gradient(90deg,#8d6f2f,#d9a83c)}
+#dnw-hud .dnw-sep{height:1px;background:#332e2b;margin:7px 0}
+#dnw-hud .dnw-btn{flex:1;padding:4px 0;text-align:center;background:#2b2724;border:1px solid #3f3833;border-radius:4px;color:#d8cec2;cursor:pointer;font-size:11px}
+#dnw-hud .dnw-btn:hover{background:#3a3330;color:#fff}
+#dnw-hud .dnw-btn.warn{color:#e0a08e;border-color:#5c3a33}
+#dnw-hud .dnw-empty{color:#6f675f;padding:6px 0;text-align:center}
+#dnw-hud .dnw-ledger{max-height:236px;overflow-y:auto}
+#dnw-hud .dnw-li{display:flex;align-items:center;gap:6px;padding:3px 2px;border-bottom:1px dashed #2b2724}
+#dnw-hud .dnw-li:last-child{border-bottom:none}
+#dnw-hud .dnw-nm{flex:1;color:#e2d8ca;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dnw-hud .dnw-num{width:26px;text-align:right;color:#c85a4a}
+#dnw-hud .dnw-mini{width:54px;height:4px;border-radius:2px;background:#2b2724;overflow:hidden}
+#dnw-hud .dnw-mini i{display:block;height:100%;background:linear-gradient(90deg,#8d3b3b,#c85a4a)}
+#dnw-hud .dnw-flag{font-size:10px;color:#d9a83c}
+#dnw-hud::-webkit-scrollbar,#dnw-hud .dnw-ledger::-webkit-scrollbar{width:5px}
+#dnw-hud .dnw-ledger::-webkit-scrollbar-thumb{background:#3f3833;border-radius:3px}
+</style>
+<script>
+(function () {
+  if (window.__dnwHudReady) return;
+  window.__dnwHudReady = true;
+
+  var CHARS = ['喜多川海梦','中野一花','中野二乃','中野三玖','中野四叶','中野五月','加藤惠','泽村英梨梨','雪之下雪乃','由比滨结衣','一色彩羽','平冢静','三浦优美子','川崎沙希','雪之下阳乃','雪之下京子','霞之丘诗羽','冰堂美智留'];
+  var CAR = {喜多川海梦:4,'中野一花':1,'中野二乃':1,'中野三玖':2,'中野四叶':2,'中野五月':2,'加藤惠':3,'泽村英梨梨':3,'雪之下雪乃':5,'由比滨结衣':5,'一色彩羽':6,'平冢静':6,'三浦优美子':7,'川崎沙希':7,'雪之下阳乃':8,'雪之下京子':8,'霞之丘诗羽':9,'冰堂美智留':9};
+  var IDENT = {喜多川海梦:'15·读者模特','中野一花':'17·新人女演员','中野二乃':'17·旭山高中','中野三玖':'17·旭山高中','中野四叶':'17·旭山高中','中野五月':'17·旭山高中','加藤惠':'16·丰之崎学园','泽村英梨梨':'16·同人绘师','雪之下雪乃':'17·侍奉社长','由比滨结衣':'17·侍奉社','一色彩羽':'16·学生会长','平冢静':'30·语文教师','三浦优美子':'17·班内顶点','川崎沙希':'17·深夜打工','雪之下阳乃':'20·大学生','雪之下京子':'40·雪之下家主母','霞之丘诗羽':'17·轻小说作家','冰堂美智留':'16·乐队主唱'};
+
+  function lastId() {
+    try { return getLastMessageId(); } catch (e) {}
+    try { return SillyTavern.chat.length - 1; } catch (e) {}
+    return 0;
+  }
+  function readData() {
+    var id = lastId();
+    try {
+      if (window.Mvu && Mvu.getMvuData) {
+        var d = Mvu.getMvuData({ type: 'message', message_id: id });
+        if (d && d.stat_data) return d.stat_data;
+      }
+    } catch (e) {}
+    try {
+      var v = getVariables({ type: 'message', message_id: id });
+      if (v && v.stat_data) return v.stat_data;
+    } catch (e) {}
+    try {
+      var w = getVariables({ type: 'message' });
+      if (w && w.stat_data) return w.stat_data;
+    } catch (e) {}
+    return null;
+  }
+  function writeData(mut) {
+    var d = readData();
+    if (!d) return false;
+    try { mut(d); } catch (e) { return false; }
+    var id = lastId();
+    try {
+      if (window.Mvu && Mvu.replaceMvuData) { Mvu.replaceMvuData({ stat_data: d }, { type: 'message', message_id: id }); return true; }
+    } catch (e) {}
+    try { replaceVariables({ stat_data: d }, { type: 'message', message_id: id }); return true; } catch (e) {}
+    try { replaceVariables({ stat_data: d }, { type: 'message' }); return true; } catch (e) {}
+    return false;
+  }
+  function send(text) {
+    try { if (window.triggerSlash) { triggerSlash('/send ' + text); return true; } } catch (e) {}
+    try {
+      var ta = document.getElementById('send_textarea');
+      if (ta) { ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); var b = document.getElementById('send_but'); if (b) { b.click(); return true; } }
+    } catch (e) {}
+    return false;
+  }
+
+  var tab = 'status', folded = false;
+  var root = document.getElementById('dnw-hud');
+  root.innerHTML = '';
+  var panel = document.createElement('div'); panel.className = 'dnw-panel';
+  panel.innerHTML =
+    '<div class="dnw-head"><span class="dnw-title">电车之狼</span>' +
+    '<span class="dnw-tab on" data-tab="status">状态</span>' +
+    '<span class="dnw-tab" data-tab="ledger">账本</span>' +
+    '<span class="dnw-fold">—</span></div>' +
+    '<div class="dnw-body"></div>';
+  root.appendChild(panel);
+  var body = panel.querySelector('.dnw-body');
+  var head = panel.querySelector('.dnw-head');
+
+  panel.querySelectorAll('.dnw-tab').forEach(function (el) {
+    el.addEventListener('click', function () {
+      tab = el.dataset.tab;
+      panel.querySelectorAll('.dnw-tab').forEach(function (x) { x.classList.toggle('on', x === el); });
+      render();
+    });
+  });
+  panel.querySelector('.dnw-fold').addEventListener('click', function () {
+    folded = !folded; body.classList.toggle('hide', folded);
+    this.textContent = folded ? '+' : '—';
+  });
+
+  var drag = null;
+  head.addEventListener('mousedown', function (e) { drag = { x: e.clientX, y: e.clientY, r: panel.getBoundingClientRect() }; });
+  document.addEventListener('mousemove', function (e) {
+    if (!drag) return;
+    var nx = drag.r.left + (e.clientX - drag.x), ny = drag.r.top + (e.clientY - drag.y);
+    root.style.right = 'auto'; root.style.bottom = 'auto';
+    root.style.left = Math.max(0, nx) + 'px'; root.style.top = Math.max(0, ny) + 'px';
+  });
+  document.addEventListener('mouseup', function () { drag = null; });
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]; }); }
+  function bar(cls, v) { return '<div class="dnw-bar ' + cls + '"><i style="width:' + Math.max(0, Math.min(100, v)) + '%"></i></div>'; }
+
+  function render() {
+    var d = readData();
+    if (!d) { body.innerHTML = '<div class="dnw-empty">等待变量初始化…</div>'; return; }
+    if (tab === 'status') {
+      var w = d['世界'] || {}, s = d['局势'] || {}, p = d['人物'] || {};
+      var tgt = s['当前目标'] || '';
+      var rec = tgt ? (p[tgt] || {}) : {};
+      var tu = rec['沦陷值'] || 0, ex = s['异常度'] || 0;
+      var html = '<div class="dnw-row"><span class="dnw-k">车厢</span><span class="dnw-v">' + (w['当前车号'] || 1) + ' 号车 · ' + esc(w['时段'] || '') + '</span></div>' +
+        '<div class="dnw-row"><span class="dnw-k">下一站</span><span class="dnw-v">' + esc(w['下一站'] || '') + '</span></div>';
+      if (!tgt) {
+        html += '<div class="dnw-sep"></div><div class="dnw-empty">还没选定目标</div>';
+      } else {
+        html += '<div class="dnw-sep"></div>' +
+          '<div class="dnw-row"><span class="dnw-k">目标</span><span class="dnw-v">' + esc(tgt) + '</span></div>' +
+          '<div class="dnw-row"><span class="dnw-k">身份</span><span class="dnw-v">' + esc(IDENT[tgt] || '—') + '</span></div>' +
+          '<div class="dnw-row"><span class="dnw-k">沦陷值</span><span class="dnw-v">' + tu + '</span></div>' + bar('dnw-tu', tu) +
+          '<div class="dnw-row"><span class="dnw-k">异常度</span><span class="dnw-v">' + ex + '</span></div>' + bar('dnw-ex', ex) +
+          '<div class="dnw-row"><span class="dnw-k">认知</span><span class="dnw-v">' + esc(rec['认知'] || '以为只是没人管') + '</span></div>' +
+          '<div class="dnw-row"><span class="dnw-k">衣物</span><span class="dnw-v">' + esc(rec['衣物状态'] || '整齐') + '</span></div>' +
+          '<div class="dnw-row"><span class="dnw-k">身体</span><span class="dnw-v">' + esc(rec['身体状态'] || '平稳') + '</span></div>';
+      }
+      html += '<div class="dnw-sep"></div><div class="dnw-row" style="gap:5px">' +
+        '<span class="dnw-btn" data-act="sel">换车厢/换人</span>' +
+        '<span class="dnw-btn warn" data-act="drop">收起压制</span></div>';
+      body.innerHTML = html;
+      body.querySelector('[data-act="sel"]').addEventListener('click', function () {
+        if (window.__dnwOpenSelector) window.__dnwOpenSelector(); else send('（打开目标选择器）');
+      });
+      body.querySelector('[data-act="drop"]').addEventListener('click', function () {
+        writeData(function (data) { data['局势'] = data['局势'] || {}; data['局势']['压制'] = '收起'; data['局势']['异常度'] = 0; });
+        send('（我把存在感收了回来。这一瞬，整节车厢同时看见。）');
+      });
+    } else {
+      var pp = d['人物'] || {};
+      var names = CHARS.concat(Object.keys(pp).filter(function (n) { return CHARS.indexOf(n) < 0; }));
+      var rows = names.map(function (n) {
+        var r = pp[n] || {};
+        var v = r['沦陷值'] || 0;
+        var flag = r['认知'] === '确认只有自己看得见' ? '<span class="dnw-flag">知</span>' : '';
+        return '<div class="dnw-li"><span class="dnw-nm">' + esc(n) + '</span>' + flag +
+          '<div class="dnw-mini"><i style="width:' + v + '%"></i></div>' +
+          '<span class="dnw-num">' + v + '</span></div>';
+      }).join('');
+      body.innerHTML = '<div class="dnw-ledger">' + rows + '</div>';
+    }
+  }
+
+  render();
+  setInterval(render, 1500);
+  try { eventOn(tavern_events.MESSAGE_RECEIVED, function () { setTimeout(render, 120); }); } catch (e) {}
+  try { eventOn(tavern_events.MESSAGE_UPDATED, function () { setTimeout(render, 120); }); } catch (e) {}
+})();
+</script>
+```
