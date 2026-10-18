@@ -1,5 +1,5 @@
 <div id="dnw-sel"></div>
-<style>
+<style id="dnw-sel-style">
 #dnw-sel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;width:520px;max-width:94vw;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;color:#e8e3dc;user-select:none;display:none}
 #dnw-sel.open{display:block}
 #dnw-sel .box{background:linear-gradient(180deg,#1c1a18,#121110);border:1px solid #3a3330;border-radius:9px;box-shadow:0 14px 44px rgba(0,0,0,.7);overflow:hidden}
@@ -37,8 +37,12 @@
 </style>
 <script>
 (function () {
-  if (window.__dnwSelReady) return;
-  window.__dnwSelReady = true;
+  var host = document.getElementById('dnw-sel');
+  if (!host) return;
+  // 已经挂到 body 上了就跳过，并把这次重绘留下的空壳隐藏
+  if (document.getElementById('dnw-sel-root')) { host.style.display = 'none'; return; }
+  var st = document.getElementById('dnw-sel-style');
+  if (st && st.parentNode !== document.head) document.head.appendChild(st);
 
   var ST = [['朝雾',3],['樱坂',3],['白鹭',2],['筱见',3],['雨宫',3],['常磐',2],['东云',3],['汐见',3],['藤袴',3],['堇町',2],['月见丘',3],['千岁桥',3]];
 
@@ -92,6 +96,8 @@
     '<span class="pg on" data-p="fixed">固定人物</span><span class="pg" data-p="rand">随机人物</span>' +
     '<span class="x">✕</span></div><div class="bd"></div><div class="ft">' +
     '<span class="btn" data-a="close">取消</span><span class="btn go" data-a="go">确认上车</span></div></div>';
+  root.id = 'dnw-sel-root';
+  document.body.appendChild(root);
   var bd = root.querySelector('.bd');
 
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]; }); }
@@ -281,7 +287,7 @@
     }
   }
 
-  open();
+  if (window.__dnwSelOpenedOnce) { render(); } else { window.__dnwSelOpenedOnce = true; open(); }
 })();
 </script>
 ```

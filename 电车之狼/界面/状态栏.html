@@ -1,5 +1,5 @@
 <div id="dnw-hud"></div>
-<style>
+<style id="dnw-hud-style">
 #dnw-hud{position:fixed;right:14px;bottom:96px;z-index:9998;width:252px;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;line-height:1.5;color:#e8e3dc;user-select:none}
 #dnw-hud .dnw-panel{background:linear-gradient(180deg,#1c1a18 0%,#141312 100%);border:1px solid #3a3330;border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.55);overflow:hidden}
 #dnw-hud .dnw-head{display:flex;align-items:center;gap:6px;padding:6px 9px;background:#221f1d;border-bottom:1px solid #3a3330;cursor:move}
@@ -35,8 +35,12 @@
 </style>
 <script>
 (function () {
-  if (window.__dnwHudReady) return;
-  window.__dnwHudReady = true;
+  // 重绘安全：看元素还在不在，而不是看一次性标记
+  var prev = document.getElementById('dnw-hud-panel');
+  if (prev && document.contains(prev)) return;
+  // 把样式搬到 head，避免消息节点被移除时样式一起丢失
+  var st = document.getElementById('dnw-hud-style');
+  if (st && st.parentNode !== document.head) document.head.appendChild(st);
 
   var CHARS = ['喜多川海梦','中野一花','中野二乃','中野三玖','中野四叶','中野五月','加藤惠','泽村英梨梨','雪之下雪乃','由比滨结衣','一色彩羽','平冢静','三浦优美子','川崎沙希','雪之下阳乃','雪之下京子','霞之丘诗羽','冰堂美智留'];
   var CAR = {喜多川海梦:4,'中野一花':1,'中野二乃':1,'中野三玖':2,'中野四叶':2,'中野五月':2,'加藤惠':3,'泽村英梨梨':3,'雪之下雪乃':5,'由比滨结衣':5,'一色彩羽':6,'平冢静':6,'三浦优美子':7,'川崎沙希':7,'雪之下阳乃':8,'雪之下京子':8,'霞之丘诗羽':9,'冰堂美智留':9};
@@ -88,15 +92,17 @@
 
   var tab = 'status', folded = false;
   var root = document.getElementById('dnw-hud');
-  root.innerHTML = '';
-  var panel = document.createElement('div'); panel.className = 'dnw-panel';
+  var panel = document.createElement('div');
+  panel.id = 'dnw-hud-panel';
+  panel.className = 'dnw-panel';
+  panel.style.cssText = 'position:fixed;right:14px;bottom:104px;z-index:9998;width:252px;max-width:86vw';
   panel.innerHTML =
     '<div class="dnw-head"><span class="dnw-title">电车之狼</span>' +
     '<span class="dnw-tab on" data-tab="status">状态</span>' +
     '<span class="dnw-tab" data-tab="ledger">账本</span>' +
     '<span class="dnw-fold">—</span></div>' +
     '<div class="dnw-body"></div>';
-  root.appendChild(panel);
+  document.body.appendChild(panel);
   var body = panel.querySelector('.dnw-body');
   var head = panel.querySelector('.dnw-head');
 
@@ -117,8 +123,8 @@
   document.addEventListener('mousemove', function (e) {
     if (!drag) return;
     var nx = drag.r.left + (e.clientX - drag.x), ny = drag.r.top + (e.clientY - drag.y);
-    root.style.right = 'auto'; root.style.bottom = 'auto';
-    root.style.left = Math.max(0, nx) + 'px'; root.style.top = Math.max(0, ny) + 'px';
+    panel.style.right = 'auto'; panel.style.bottom = 'auto';
+    panel.style.left = Math.max(0, nx) + 'px'; panel.style.top = Math.max(0, ny) + 'px';
   });
   document.addEventListener('mouseup', function () { drag = null; });
 
