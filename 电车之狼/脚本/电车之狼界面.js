@@ -1,11 +1,25 @@
-/* 电车之狼 · 界面脚本
+﻿/* 电车之狼 · 界面脚本
  * 目标选择器 / 状态栏 / 账本，三个面板全部由脚本自己挂到酒馆页面输入栏上方。
  * 不依赖消息楼层、不依赖正则渲染、不占用任何消息文本。
  */
 (function () {
   var P = window.parent || window;
-  var D = P.document;
-  var JQ = P.jQuery || window.jQuery;
+  // 脚本可能跑在隐藏 iframe 里，也可能直接跑在酒馆页面：找那个真的有输入栏的 document
+  function pickWin() {
+    var cands = [];
+    try { if (window.parent && window.parent !== window) cands.push(window.parent); } catch (e) { }
+    cands.push(window);
+    for (var i = 0; i < cands.length; i++) {
+      try {
+        var doc = cands[i].document;
+        if (doc && (doc.getElementById('send_form') || doc.getElementById('send_textarea'))) return cands[i];
+      } catch (e) { }
+    }
+    return cands[cands.length - 1];
+  }
+  var W = pickWin();
+  var D = W.document;
+  var JQ = W.jQuery || window.jQuery;
 
   if (D.getElementById('dnw-root')) { return; }
 
@@ -149,7 +163,7 @@
     var ta = D.getElementById('send_textarea');
     if (ta) {
       ta.value = text;
-      ta.dispatchEvent(new P.Event('input', { bubbles: true }));
+      ta.dispatchEvent(new (W.Event || Event)('input', { bubbles: true }));
       var b = D.getElementById('send_but'); if (b) { b.click(); return true; }
     }
     return false;
@@ -285,7 +299,7 @@
 
   function openSel() { sel.className = 'open'; renderSel(); }
   function closeSel() { sel.className = ''; }
-  P.__dnwOpenSel = openSel;
+  W.__dnwOpenSel = openSel;
 
   function renderSel() {
     sbd.innerHTML = '';
@@ -469,8 +483,8 @@
   // 首次进入且还没选过目标时，自动弹一次选择器
   setTimeout(function () {
     var d = readData();
-    if (d && !(d['局势'] || {})['当前目标'] && !P.__dnwIntroShown) {
-      P.__dnwIntroShown = true;
+    if (d && !(d['局势'] || {})['当前目标'] && !W.__dnwIntroShown) {
+      W.__dnwIntroShown = true;
       openSel();
     }
   }, 900);
