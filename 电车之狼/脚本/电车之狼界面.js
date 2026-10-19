@@ -1,6 +1,8 @@
 ﻿/* 电车之狼 · 界面脚本
- * 目标选择器 / 状态栏 / 账本，三个面板全部由脚本自己挂到酒馆页面输入栏上方。
+ * 目标选择器 / 状态栏 / 账本，全部由脚本自己挂到酒馆页面「输入栏正上方」。
+ * 挂载方式：插在 #form_sheld（输入栏容器）前面，占满输入栏宽度、随输入栏一起留在页面上。
  * 不依赖消息楼层、不依赖正则渲染、不占用任何消息文本。
+ * 选择器同样锚在输入栏上方展开，不再悬浮在屏幕中央。
  */
 (function () {
   var P = window.parent || window;
@@ -69,14 +71,15 @@
   var MARK = ['左眼角一颗泪痣', '深棕短发', '长卷发', '黑框眼镜', '耳骨一枚耳钉', '指甲涂成深红', '颈侧一颗小痣', '发尾挑染'];
 
   var CSS = [
-    '#dnw-root{position:fixed;right:14px;bottom:96px;z-index:9998;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;line-height:1.5;color:#e8e3dc}',
-    '#dnw-root .p{background:linear-gradient(180deg,#1c1a18,#121110);border:1px solid #3a3330;border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.55);overflow:hidden;width:252px}',
-    '#dnw-root .hd{display:flex;align-items:center;gap:6px;padding:6px 9px;background:#221f1d;border-bottom:1px solid #3a3330;cursor:move;user-select:none}',
+    '#dnw-root{position:relative;box-sizing:border-box;width:100%;flex:0 0 auto;margin:0 0 4px;z-index:60;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;line-height:1.5;color:#e8e3dc}',
+    '#dnw-root.float{position:fixed;right:14px;bottom:96px;width:252px;margin:0;z-index:9998}',
+    '#dnw-root .p{background:linear-gradient(180deg,#1c1a18,#121110);border:1px solid #3a3330;border-radius:8px;box-shadow:0 -3px 14px rgba(0,0,0,.4);overflow:hidden;width:auto}',
+    '#dnw-root .hd{display:flex;align-items:center;gap:6px;padding:5px 9px;background:#221f1d;border-bottom:1px solid #3a3330;user-select:none}',
     '#dnw-root .ti{flex:1;letter-spacing:.06em;color:#d8cec2}',
     '#dnw-root .tb{padding:2px 8px;border-radius:4px;cursor:pointer;color:#8b8178}',
     '#dnw-root .tb.on{background:#382f2a;color:#f0e6d8}',
     '#dnw-root .fl{cursor:pointer;color:#8b8178;padding:0 3px}',
-    '#dnw-root .bd{padding:8px 9px 10px;max-height:62vh;overflow-y:auto}',
+    '#dnw-root .bd{padding:8px 9px 10px;max-height:30vh;overflow-y:auto}',
     '#dnw-root .bd.hide{display:none}',
     '#dnw-root .rw{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}',
     '#dnw-root .k{color:#8b8178;white-space:nowrap}',
@@ -98,7 +101,7 @@
     '#dnw-root .mi i{display:block;height:100%;background:linear-gradient(90deg,#8d3b3b,#c85a4a)}',
     '#dnw-root .fg{font-size:10px;color:#d9a83c}',
     '#dnw-root .me{font-size:10px;color:#6f675f;white-space:nowrap}',
-    '#dnw-sel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;width:520px;max-width:94vw;display:none;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;color:#e8e3dc}',
+    '#dnw-sel{position:fixed;left:50%;bottom:180px;transform:translateX(-50%);z-index:9999;width:520px;max-width:94vw;display:none;font-family:"Sarasa Gothic SC","Noto Sans SC",system-ui,sans-serif;font-size:12px;color:#e8e3dc}',
     '#dnw-sel.open{display:block}',
     '#dnw-sel .box{background:linear-gradient(180deg,#1c1a18,#121110);border:1px solid #3a3330;border-radius:9px;box-shadow:0 14px 44px rgba(0,0,0,.7);overflow:hidden}',
     '#dnw-sel .hd{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#221f1d;border-bottom:1px solid #3a3330}',
@@ -106,7 +109,7 @@
     '#dnw-sel .pg{padding:3px 9px;border-radius:4px;cursor:pointer;color:#8b8178}',
     '#dnw-sel .pg.on{background:#382f2a;color:#f2e8da}',
     '#dnw-sel .x{cursor:pointer;color:#8b8178;padding:0 3px}',
-    '#dnw-sel .bd{padding:10px 11px 12px;max-height:70vh;overflow-y:auto}',
+    '#dnw-sel .bd{padding:10px 11px 12px;max-height:52vh;overflow-y:auto}',
     '#dnw-sel .cr{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:9px}',
     '#dnw-sel .cc{padding:3px 9px;border:1px solid #3f3833;border-radius:4px;cursor:pointer;color:#b7ab9d;background:#241f1d}',
     '#dnw-sel .cc.on{background:#4a2f28;border-color:#7a4a3c;color:#f0ddd2}',
@@ -177,25 +180,17 @@
   head.appendChild(h('span', 'ti', '电车之狼'));
   var tStatus = h('span', 'tb on', '状态');
   var tLedger = h('span', 'tb', '账本');
+  var tPick = h('span', 'tb', '选人');
   var fold = h('span', 'fl', '—');
-  head.appendChild(tStatus); head.appendChild(tLedger); head.appendChild(fold);
+  head.appendChild(tStatus); head.appendChild(tLedger); head.appendChild(tPick); head.appendChild(fold);
   var body = h('div', 'bd');
   panel.appendChild(head); panel.appendChild(body);
   root.appendChild(panel);
 
   tStatus.onclick = function () { tab = 'status'; tStatus.className = 'tb on'; tLedger.className = 'tb'; render(); };
   tLedger.onclick = function () { tab = 'ledger'; tStatus.className = 'tb'; tLedger.className = 'tb on'; render(); };
+  tPick.onclick = function () { openSel(); };
   fold.onclick = function () { folded = !folded; body.className = folded ? 'bd hide' : 'bd'; fold.textContent = folded ? '+' : '—'; };
-
-  var drag = null;
-  head.onmousedown = function (e) { drag = { x: e.clientX, y: e.clientY, r: root.getBoundingClientRect() }; };
-  D.addEventListener('mousemove', function (e) {
-    if (!drag) return;
-    root.style.right = 'auto'; root.style.bottom = 'auto';
-    root.style.left = Math.max(0, drag.r.left + (e.clientX - drag.x)) + 'px';
-    root.style.top = Math.max(0, drag.r.top + (e.clientY - drag.y)) + 'px';
-  });
-  D.addEventListener('mouseup', function () { drag = null; });
 
   function row(k, v) {
     var r = h('div', 'rw');
@@ -297,7 +292,7 @@
   cancel.onclick = closeSel;
   go.onclick = confirmSel;
 
-  function openSel() { sel.className = 'open'; renderSel(); }
+  function openSel() { placeSel(); sel.className = 'open'; renderSel(); }
   function closeSel() { sel.className = ''; }
   W.__dnwOpenSel = openSel;
 
@@ -465,20 +460,64 @@
     }
   }
 
-  // ───────── 挂载 ─────────
+  // ───────── 挂载：固定在输入栏正上方 ─────────
+  // 做法：把常驻条插在 #form_sheld（输入栏容器）前面，成为布局流里的一行，
+  // 宽度跟随输入栏、位置永远贴着输入栏上沿，不悬在聊天区上、也不挂消息楼层。
+  // 退回顺序：#form_sheld → #send_form → 都没有才降级成右下角浮层（.float）。
+  function dockTarget() {
+    var fs = D.getElementById('form_sheld');
+    var sf = D.getElementById('send_form');
+    var anchor = fs || sf;
+    if (!anchor || !anchor.parentNode || anchor.parentNode.nodeType !== 1) return null;
+    var host = anchor.parentNode;
+    // 兜底：父容器若是「横向 flex」，插进去会被挤成并排而不是放在上面，
+    // 这时往上一层，把这个容器整体作为插入点。
+    try {
+      var cs = W.getComputedStyle ? W.getComputedStyle(host) : null;
+      if (cs && String(cs.display).indexOf('flex') >= 0 && String(cs.flexDirection).indexOf('row') === 0) {
+        var up = host.parentNode;
+        if (up && up.nodeType === 1 && up.id !== 'body') return { host: up, before: host };
+      }
+    } catch (e) { }
+    return { host: host, before: anchor };
+  }
+
+  // 选择器紧贴常驻条上沿展开（不再居中悬浮），高度不够时往上顶
+  function placeSel() {
+    try {
+      var r = root.getBoundingClientRect();
+      var vh = W.innerHeight || (D.documentElement && D.documentElement.clientHeight) || 800;
+      var b = Math.round(vh - r.top + 6);
+      if (!(b > 0) || b > vh - 40) b = 150;
+      sel.style.bottom = b + 'px';
+    } catch (e) { }
+  }
+
   function mount() {
     style();
-    if (!D.body.contains(root)) D.body.appendChild(root);
+    var t = dockTarget();
+    if (t) {
+      root.className = '';
+      if (root.parentNode !== t.host || root.nextSibling !== t.before) {
+        try { t.host.insertBefore(root, t.before); } catch (e) { }
+      }
+    } else if (!D.body.contains(root)) {
+      root.className = 'float';
+      D.body.appendChild(root);
+    }
     if (!D.body.contains(sel)) D.body.appendChild(sel);
+    placeSel();
     render();
   }
 
   if (JQ) { JQ(function () { mount(); }); } else { mount(); }
+  try { W.addEventListener('resize', function () { placeSel(); }); } catch (e) { }
 
   try { eventOn(tavern_events.MESSAGE_RECEIVED, function () { setTimeout(render, 120); }); } catch (e) { }
   try { eventOn(tavern_events.MESSAGE_UPDATED, function () { setTimeout(render, 120); }); } catch (e) { }
   try { eventOn(tavern_events.CHAT_CHANGED, function () { setTimeout(mount, 200); }); } catch (e) { }
-  setInterval(render, 1500);
+  // 输入栏被重建 / 切页面导致脱离时自动重新贴回
+  setInterval(function () { if (!D.body.contains(root)) mount(); else render(); }, 1500);
 
   // 首次进入且还没选过目标时，自动弹一次选择器
   setTimeout(function () {
