@@ -1,4 +1,4 @@
-﻿/* 电车之狼 · 界面脚本
+/* 电车之狼 · 界面脚本
  * 目标选择器 / 状态栏 / 账本，全部由脚本自己挂到酒馆页面「输入栏正上方」。
  * 挂载方式：插在 #form_sheld（输入栏容器）前面，占满输入栏宽度、随输入栏一起留在页面上。
  * 不依赖消息楼层、不依赖正则渲染、不占用任何消息文本。
@@ -216,6 +216,7 @@
       var tu = rec['沦陷值'] || 0, ex = s['异常度'] || 0;
       body.appendChild(row('车厢', (w['当前车号'] || 1) + ' 号车 · ' + (w['时段'] || '')));
       body.appendChild(row('下一站', w['下一站'] || ''));
+      body.appendChild(row('地点', s['地点'] || '车厢'));
       var sep = h('div', 'sp'); body.appendChild(sep);
       if (!tgt) {
         body.appendChild(h('div', 'em', '还没选定目标'));
@@ -276,8 +277,9 @@
   shd.appendChild((function () { var b = D.createElement('b'); b.textContent = '目标选择器'; return b; })());
   var pFixed = h('span', 'pg on', '固定人物');
   var pRand = h('span', 'pg', '随机人物');
+  var pLeave = h('span', 'pg', '带她走');
   var closeX = h('span', 'x', '✕');
-  shd.appendChild(pFixed); shd.appendChild(pRand); shd.appendChild(closeX);
+  shd.appendChild(pFixed); shd.appendChild(pRand); shd.appendChild(pLeave); shd.appendChild(closeX);
   var sbd = h('div', 'bd');
   var sft = h('div', 'ft');
   var cancel = h('span', 'btn', '取消');
@@ -286,8 +288,9 @@
   sbox.appendChild(shd); sbox.appendChild(sbd); sbox.appendChild(sft);
   sel.appendChild(sbox);
 
-  pFixed.onclick = function () { page = 'fixed'; pFixed.className = 'pg on'; pRand.className = 'pg'; renderSel(); };
-  pRand.onclick = function () { page = 'rand'; pFixed.className = 'pg'; pRand.className = 'pg on'; renderSel(); };
+  pFixed.onclick = function () { page = 'fixed'; pFixed.className = 'pg on'; pRand.className = 'pg'; pLeave.className = 'pg'; renderSel(); };
+  pRand.onclick = function () { page = 'rand'; pFixed.className = 'pg'; pRand.className = 'pg on'; pLeave.className = 'pg'; renderSel(); };
+  pLeave.onclick = function () { page = 'leave'; pFixed.className = 'pg'; pRand.className = 'pg'; pLeave.className = 'pg on'; renderSel(); };
   closeX.onclick = closeSel;
   cancel.onclick = closeSel;
   go.onclick = confirmSel;
@@ -298,7 +301,72 @@
 
   function renderSel() {
     sbd.innerHTML = '';
-    if (page === 'fixed') renderFixed(); else renderRand();
+    if (page === 'fixed') renderFixed();
+    else if (page === 'leave') renderLeave();
+    else renderRand();
+  }
+
+  var leavePick = -1;
+  var PLACES = [
+    ['站台', '刚下车。人少、有监控，末班车时段几乎没有人'],
+    ['站内厕所', '一米见方的隔间，锁上就只有你们两个'],
+    ['酒店', '车站步行十分钟，要登记，隔音一般'],
+    ['她家', '她一个人的住处，没有时间压力'],
+    ['回车上', '回到车厢，状态不重置']
+  ];
+
+  function renderLeave() {
+    var d = readData() || {};
+    var s = d['局势'] || {}, p = d['人物'] || {};
+    var tgt = s['当前目标'] || '';
+    if (!tgt) { sbd.appendChild(h('div', 'tip', '还没选目标。先在「固定人物」里挑一个人。')); return; }
+    var rec = p[tgt] || {};
+    var tu = rec['沦陷值'] || 0;
+    sbd.appendChild(h('div', 'pre', '目标：' + tgt + '　沦陷值：' + tu + '　当前地点：' + (s['地点'] || '车厢')));
+    sbd.appendChild(h('div', 'lbl', '去哪儿'));
+    var wrap = h('div', 'app');
+    PLACES.forEach(function (pl, i) {
+      var el = h('div', 'ap' + (leavePick === i ? ' on' : ''));
+      var t = h('div', null, pl[0]);
+      el.appendChild(t);
+      var sub = h('div', null, pl[1]);
+      sub.style.cssText = 'color:#877d73;font-size:11px;margin-top:2px;line-height:1.35';
+      el.appendChild(sub);
+      el.onclick = function () { leavePick = i; renderSel(); };
+      wrap.appendChild(el);
+    });
+    sbd.appendChild(wrap);
+    if (leavePick >= 0) {
+      var hint = tu < 21 ? '她这个状态下不会跟你走，点了也只会被拒绝。'
+        : tu < 41 ? '她还没有答应的理由，得先把她逼到没办法。'
+          : tu < 61 ? '她会半推半就地跟着走，一路上不说话。'
+            : tu < 81 ? '她会自己提出来。'
+              : '她会主动带路，比你还急。';
+      sbd.appendChild(h('div', 'pre', '她会怎么回应：' + hint));
+    }
+  }
+
+  function confirmLeave() {
+    var d = readData();
+    if (!d) { alert('变量还没初始化，发一条消息后再选。'); return; }
+    if (leavePick < 0) { alert('先选一个地方。'); return; }
+    var s = d['局势'] || {}, p = d['人物'] || {};
+    var tgt = s['当前目标'] || '';
+    if (!tgt) { alert('先选目标。'); return; }
+    var place = PLACES[leavePick][0];
+    var tu = (p[tgt] && p[tgt]['沦陷值']) || 0;
+    var payload;
+    if (place === '回车上') {
+      payload = '【转场】\n回到车厢。\n（状态不重置：她的衣物、身体、沦陷值沿用离开时的。按世界书「转场」条目写回来的这一段。）';
+    } else {
+      payload = '【转场】\n从车厢离开，去：' + place + '\n目标：' + tgt + '（沦陷值 ' + tu + '）' +
+        '\n（不再身处车厢。按世界书「转场」与「三个地点」条目展开：先写下车、站台、走路这一段，路上让她说一两句；到地方先写环境三样，再进动作。不要一步跳到房间里，也不要重开一场。）';
+    }
+    writeData(function (data) {
+      data['局势'] = data['局势'] || {};
+      data['局势']['地点'] = place === '回车上' ? '车厢' : place;
+    });
+    closeSel(); send(payload); render();
   }
 
   function renderFixed() {
@@ -417,6 +485,7 @@
   }
 
   function confirmSel() {
+    if (page === 'leave') { confirmLeave(); return; }
     if (!readData()) { alert('变量还没初始化，发一条消息后再选。'); return; }
     if (app < 0) { alert('先选怎么靠近。'); return; }
     var a = APP[app];

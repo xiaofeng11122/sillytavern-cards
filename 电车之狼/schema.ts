@@ -19,6 +19,7 @@ export const Schema = z.object({
         .transform((value) => _.clamp(value, 0, 100))
         .prefault(0),
       压制: z.enum(['展开', '收起']).prefault('展开'),
+      地点: z.enum(['车厢', '站台', '站内厕所', '酒店', '她家']).prefault('车厢'),
       她的认知: z.enum(['以为只是没人管', '确认只有自己看得见']).prefault('以为只是没人管'),
     })
     .prefault({}),
