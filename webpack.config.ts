@@ -108,6 +108,7 @@ function watch_tavern_helper(compiler: webpack.Compiler) {
 
 let watcher: FSWatcher;
 const dump = () => {
+<<<<<<< HEAD
   // 本地改动(沙箱环境不允许子进程管道 stdio, `exec('pnpm dump')` 会 spawn EPERM):
   // 改为进程内直接执行同一份 dump 逻辑, 行为与 `pnpm dump` 等价.
   // 另: 本地构建若设了 SKIP_SCHEMA_DUMP=1 就整段跳过——webpack 会在这里卡住时便于二分定位.
@@ -117,6 +118,9 @@ const dump = () => {
   import('./dump_schema.ts').catch(error => {
     console.error(`\x1b[31m[schema_dump]\x1b[0m dump 失败: ${error}`);
   });
+=======
+  exec('pnpm dump', { cwd: import.meta.dirname });
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
   console.info('\x1b[36m[schema_dump]\x1b[0m 已将所有 schema.ts 转换为 schema.json');
 };
 const dump_debounced = _.debounce(dump, 500, { leading: true, trailing: false });
@@ -138,9 +142,14 @@ function schema_dump(compiler: webpack.Compiler) {
 
 let child_process: ChildProcess;
 const bundle = () => {
+<<<<<<< HEAD
   // 本地改动(沙箱环境不允许子进程管道 stdio, `exec('pnpm sync bundle all')` 会 spawn EPERM):
   // 跳过 tavern_sync. 角色卡的正式打包走 tavern_forge, 与此处的开发期配套无关.
   console.info('\x1b[36m[tavern_sync]\x1b[0m 已跳过 (本地环境禁用子进程; 打包请用 tavern_forge)');
+=======
+  exec('pnpm sync bundle all', { cwd: import.meta.dirname });
+  console.info('\x1b[36m[tavern_sync]\x1b[0m 已打包所有配置了的角色卡/世界书/预设');
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
 };
 const bundle_debounced = _.debounce(bundle, 500, { leading: true, trailing: false });
 function tavern_sync(compiler: webpack.Compiler) {
@@ -191,6 +200,7 @@ function tavern_sync(compiler: webpack.Compiler) {
   });
 }
 
+<<<<<<< HEAD
 /**
  * 入口名：`<src|示例>/A/B` → `A/B`，用来在做 `--config-name` 过滤时指认单个入口。
  * 单独构建某一个界面/脚本时用得上，例如只构建窃玉偷香的两个产物：
@@ -204,17 +214,24 @@ function entry_name(script: string) {
   return path.relative(import.meta.dirname, dir).split(/[\\/]/).slice(1).join('/') || path.parse(script).name;
 }
 
+=======
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
 function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Configuration {
   const should_obfuscate = fs
     .readFileSync(path.join(import.meta.dirname, entry.script), 'utf-8')
     .includes('@obfuscate');
   const script_filepath = path.parse(entry.script);
+<<<<<<< HEAD
   const name = entry_name(entry.script);
 
   return (_env, argv) => ({
     // 本地改动: 给每个入口起名，便于只构建关心的那一个（见 entry_name 的注释）。
     // 原来这里是 `path.relative(...)` 的内联写法，抽出函数只是为了让它能同时给 module 级的 name 用。
     name,
+=======
+
+  return (_env, argv) => ({
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
     experiments: {
       outputModule: true,
     },
@@ -511,15 +528,23 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
     optimization: {
       minimize: true,
       minimizer: [
+<<<<<<< HEAD
         // 本地改动: parallel: false —— 沙箱环境不允许 jest-worker 的子进程管道 stdio
         argv.mode === 'production'
           ? new TerserPlugin({
               parallel: false,
+=======
+        argv.mode === 'production'
+          ? new TerserPlugin({
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
               terserOptions: { format: { quote_style: 1 }, mangle: { reserved: ['_', 'toastr', 'YAML', '$', 'z'] } },
             })
           : new TerserPlugin({
               extractComments: false,
+<<<<<<< HEAD
               parallel: false,
+=======
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
               terserOptions: {
                 format: { beautify: true, indent_level: 2 },
                 compress: false,
@@ -606,10 +631,13 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
   });
 }
 
+<<<<<<< HEAD
 // 本地改动勘误 (2026-10-15): 不要再把每个入口包成 { name, config } 这种「描述符」。
 // webpack-cli 不认这种形状, 会把 config 当成配置对象的未知属性, 整个构建直接中止:
 //   [webpack-cli] Invalid configuration object. configuration[N] has an unknown property 'config'.
 // GitHub Actions 的 bundle 从 2026-10-09 (b093509) 起每次 push 都红、失败邮件发给仓库主,
 // 就是这个包法引起的, 与依赖版本无关 (锁文件没动过)。
 // 上游写法直接导出工厂函数数组即可, `--config-name` 照样能用 —— name 在解析后的配置对象里。
+=======
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
 export default config.entries.map(parse_configuration);
